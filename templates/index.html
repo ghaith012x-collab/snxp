@@ -1,102 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Live Snapchat Login Cam</title>
+    <title>Live Snapchat Login - Full Control</title>
     <style>
-        body { background:#0a0a0f; color:#ddd; font-family:sans-serif; margin:0; padding:20px; text-align:center; }
+        body { background:#0a0a0f; color:#ddd; font-family: system-ui, sans-serif; margin:0; padding:20px; text-align:center; }
         .frame {
-            display: inline-block;
-            border: 14px solid #222;
-            border-radius: 14px;
-            background: #111;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.7);
-            overflow: hidden;
+            display:inline-block;
+            border:14px solid #222;
+            border-radius:14px;
+            background:#111;
+            box-shadow:0 25px 70px rgba(0,0,0,0.7);
+            overflow:hidden;
         }
         #live {
-            display: block;
-            cursor: crosshair;
-            max-width: 100%;
-            image-rendering: crisp-edges;
+            display:block;
+            cursor:crosshair;
+            max-width:100%;
         }
         .bar {
-            background: #111;
-            padding: 8px 16px;
-            font-family: monospace;
-            font-size: 13px;
-            color: #22c55e;
-            text-align: left;
+            background:#111;
+            padding:8px 16px;
+            font-family:monospace;
+            font-size:13px;
+            color:#22c55e;
+            text-align:left;
         }
         .controls {
-            margin: 20px auto;
-            background: #1a1a2e;
-            padding: 18px;
-            border-radius: 12px;
-            max-width: 820px;
-            display: inline-block;
+            margin:20px auto;
+            background:#1a1a2e;
+            padding:18px;
+            border-radius:12px;
+            max-width:820px;
+            display:inline-block;
         }
         button {
-            padding: 10px 18px;
-            margin: 4px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
+            padding:11px 18px;
+            margin:4px;
+            background:#3b82f6;
+            color:white;
+            border:none;
+            border-radius:8px;
+            font-size:14px;
+            cursor:pointer;
         }
-        button:hover { background: #2563eb; }
-        .danger { background: #ef4444; }
+        button:hover { background:#2563eb; }
+        .danger { background:#ef4444; }
         input {
-            padding: 8px 12px;
-            font-size: 15px;
-            background: #111;
-            border: 1px solid #333;
-            color: #fff;
-            border-radius: 6px;
-            width: 220px;
+            padding:10px 14px;
+            font-size:15px;
+            background:#111;
+            border:1px solid #333;
+            color:#fff;
+            border-radius:6px;
+            width:280px;
         }
-        .hint { color:#666; font-size:12px; margin-top:8px; }
+        .hint { color:#666; font-size:12px; margin-top:10px; }
     </style>
 </head>
 <body>
-    <h2>🖥️ Live Snapchat Login - Full Control</h2>
-    <p style="color:#666">Click anywhere on the image • Type in the box below • Press Enter or Backspace</p>
+    <h2>🖥️ Live Snapchat Login - Click + Type Control</h2>
+    <p style="color:#888">Click directly on the image to focus a field, then type below. Enter and Backspace work.</p>
 
     <div class="frame">
-        <div class="bar" id="bar">LIVE CAM • Click fields to focus • Type below</div>
+        <div class="bar" id="bar">LIVE CAM • Click fields in the image</div>
         <img id="live" src="/screenshot" width="1280" height="720">
     </div>
 
     <div class="controls">
-        <input id="input" placeholder="Click a field above, then type here" autofocus>
-        <button onclick="sendType()">Type</button>
-        <button onclick="sendKey('Enter')">Enter</button>
-        <button onclick="sendKey('Backspace')">Backspace</button>
-        <button onclick="resetAll()" class="danger">Reset Page</button>
+        <input id="input" placeholder="Click a field in the image first, then type here" autofocus>
+        <button onclick="typeText()">Type</button>
+        <button onclick="pressKey('Enter')">Enter</button>
+        <button onclick="pressKey('Backspace')">Backspace</button>
+        <button onclick="resetPage()" class="danger">Reset</button>
     </div>
 
-    <div class="hint">Tip: Click the username or password box in the image first, then type.</div>
+    <div class="hint">Tip: Click the top input field or password field in the screenshot, then type.</div>
 
     <script>
         const live = document.getElementById('live');
         const input = document.getElementById('input');
         const bar = document.getElementById('bar');
 
-        let lastRefresh = 0;
-
-        function refresh() {
-            const ts = Date.now();
-            live.src = `/screenshot?cb=${ts}`;
+        function updateStatus() {
             fetch('/status').then(r => r.json()).then(s => {
-                bar.textContent = `LIVE CAM • ${s.last_action || ''} • frame ${s.frame}`;
+                bar.textContent = `LIVE CAM • ${s.last_action || 'Ready'} • frame ${s.frame}`;
             });
         }
 
-        // Click anywhere on the image
+        // Click on the live image - calculate real image coordinates
         live.onclick = async function(e) {
             const rect = live.getBoundingClientRect();
-            const scaleX = live.naturalWidth / rect.width;
-            const scaleY = live.naturalHeight / rect.height;
+            const scaleX = 1280 / rect.width;   // natural size
+            const scaleY = 720 / rect.height;
 
             const x = Math.round((e.clientX - rect.left) * scaleX);
             const y = Math.round((e.clientY - rect.top) * scaleY);
@@ -108,56 +103,65 @@
             });
 
             input.focus();
-            refresh();
+            updateStatus();
+            setTimeout(refreshImage, 80);
         };
 
-        async function sendType() {
+        async function typeText() {
             const text = input.value;
             if (!text) return;
-            
             await fetch('/type', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({text})
             });
             input.value = '';
-            refresh();
+            refreshImage();
         }
 
-        async function sendKey(key) {
+        async function pressKey(key) {
             await fetch('/key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({key})
             });
-            refresh();
+            refreshImage();
         }
 
-        async function resetAll() {
-            await fetch('/reset', {method: 'POST'});
-            refresh();
+        async function resetPage() {
+            await fetch('/reset', {method:'POST'});
+            refreshImage();
+        }
+
+        function refreshImage() {
+            const ts = Date.now();
+            live.src = `/screenshot?cb=${ts}`;
+            updateStatus();
         }
 
         // Keyboard support
         input.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
-                sendType();
-                setTimeout(() => sendKey('Enter'), 120);
-            }
-            if (e.key === 'Backspace' && input.value === '') {
                 e.preventDefault();
-                sendKey('Backspace');
+                typeText();
+                setTimeout(() => pressKey('Enter'), 150);
+            }
+            if (e.key === 'Backspace' && input.value.length === 0) {
+                e.preventDefault();
+                pressKey('Backspace');
             }
         });
 
-        // Aggressive live refresh
-        setInterval(refresh, 620);
+        // Fast live updates
+        setInterval(refreshImage, 650);
 
-        // Initial
-        setTimeout(refresh, 80);
-        setTimeout(refresh, 350);
+        // Boot
+        setTimeout(() => {
+            refreshImage();
+            input.focus();
+        }, 100);
 
-        console.log('%c[SNAPCHAT CAM] Full control ready — click + type', 'color:#22c55e');
+        console.log('%c[SNAPCHAT] Full click + type control active', 'color:#22c55e');
     </script>
 </body>
 </html>
