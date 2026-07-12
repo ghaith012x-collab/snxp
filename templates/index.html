@@ -1,349 +1,198 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Account Manager - REAL Snapchat</title>
+    <title>LIVE Linux Browser Control</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background: #0f0f23; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            color: #e0e0e0;
-        }
-        .panel { 
+        body { background: #0a0a0f; color: #ddd; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { margin-bottom: 10px; }
+        .controls { 
             background: #1a1a2e; 
-            padding: 48px; 
-            border-radius: 16px; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4); 
-            width: 420px; 
-            border: 1px solid #2a2a4a;
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
         }
-        .header { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            margin-bottom: 32px; 
-            padding-bottom: 20px; 
-            border-bottom: 1px solid #2a2a4a;
+        .control-group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 12px; color: #888; }
+        input { 
+            padding: 10px 14px; 
+            background: #111; 
+            border: 1px solid #333; 
+            color: white; 
+            border-radius: 8px; 
+            font-size: 15px;
+            width: 260px;
         }
-        .avatar { 
-            width: 40px; 
-            height: 40px; 
-            background: #6366f1; 
-            border-radius: 10px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: bold; 
-            font-size: 16px;
-        }
-        .header-text h2 { 
-            font-size: 20px; 
+        button { 
+            padding: 12px 20px; 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
             font-weight: 600; 
-            color: #f0f0f0;
-        }
-        .header-text p { 
-            font-size: 13px; 
-            color: #6b7280; 
-            margin-top: 2px;
-        }
-        .real-badge {
-            background: #22c55e;
-            color: black;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-weight: bold;
-            margin-left: 8px;
-        }
-        .field-group { margin-bottom: 20px; }
-        .field-group label { 
-            display: block; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-            color: #6b7280; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-        }
-        .field-value { 
-            background: #0f0f23; 
-            padding: 14px 16px; 
-            border-radius: 10px; 
-            border: 1px solid #2a2a4a; 
-            color: #6366f1; 
-            font-family: 'SF Mono', monospace; 
+            cursor: pointer;
             font-size: 15px;
         }
-        input { 
-            width: 100%; 
-            padding: 14px 16px; 
-            background: #0f0f23; 
-            border: 1px solid #2a2a4a; 
-            border-radius: 10px; 
-            color: #e0e0e0; 
-            font-size: 15px; 
-            outline: none; 
-            transition: border-color 0.2s;
+        button:hover { background: #2563eb; }
+        .action-btn { background: #22c55e; }
+        .danger { background: #ef4444; }
+        
+        .browser-frame {
+            background: #1e1e1e;
+            border: 12px solid #222;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 1280px;
+            max-width: 100%;
         }
-        input:focus { border-color: #6366f1; }
-        input::placeholder { color: #4b5563; }
-        button { 
-            width: 100%; 
-            padding: 14px; 
-            background: #6366f1; 
-            border: none; 
-            border-radius: 10px; 
-            color: white; 
-            font-weight: 600; 
-            font-size: 15px; 
-            cursor: pointer; 
-            margin-top: 8px; 
-            transition: background 0.2s;
-        }
-        button:hover { background: #4f46e5; }
-        .feed-section { 
-            margin-top: 28px; 
-            padding-top: 24px; 
-            border-top: 1px solid #2a2a4a;
-        }
-        .feed-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 12px;
-        }
-        .feed-header span { 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-            color: #6b7280; 
-            font-weight: 500;
-        }
-        .status { 
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            font-size: 12px; 
-            color: #22c55e;
-        }
-        .status-dot { 
-            width: 6px; 
-            height: 6px; 
-            background: #22c55e; 
-            border-radius: 50%; 
-            animation: pulse 2s infinite;
-        }
-        .status.connecting {
-            color: #eab308;
-        }
-        .status.connecting .status-dot {
-            background: #eab308;
-        }
-        .status.error {
-            color: #ef4444;
-        }
-        .status.error .status-dot {
+        .live-label {
             background: #ef4444;
-        }
-        @keyframes pulse { 
-            0%, 100% { opacity: 1; } 
-            50% { opacity: 0.4; } 
-        }
-        .feed-frame { 
-            background: #0f0f23; 
-            border: 1px solid #2a2a4a; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            aspect-ratio: 16/9;
-            position: relative;
-        }
-        .feed-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            border: none;
-        }
-        .feed-overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #22c55e;
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-family: monospace;
-        }
-        .real-label {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #22c55e;
-            color: black;
-            font-size: 10px;
-            padding: 1px 6px;
-            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+            padding: 4px 14px;
             font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .status-bar {
+            background: #111;
+            padding: 8px 16px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #22c55e;
+        }
+        #live-img {
+            width: 100%;
+            display: block;
+            image-rendering: crisp-edges;
+        }
+        .log {
+            background: #111;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 180px;
+            overflow: auto;
         }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <div class="header">
-            <div class="avatar">Z</div>
-            <div class="header-text">
-                <h2>Account Manager <span class="real-badge">REAL</span></h2>
-                <p>Live Snapchat session (Playwright)</p>
+    <div class="container">
+        <h1>🖥️ LIVE Linux Browser Control</h1>
+        <p style="color:#888; margin-bottom:20px;">You control the browser. Every click and keystroke updates the live screenshot.</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Phone Number</label>
+                <input id="phone" type="text" value="+47 40300869">
             </div>
-        </div>
-        
-        <div class="field-group">
-            <label>Target Account</label>
-            <div class="field-value">zexoghaith</div>
-        </div>
-        
-        <div class="field-group">
-            <label>Phone Number (Norway)</label>
-            <input type="text" id="phone" placeholder="+47 40300869" value="+47 40300869" autocomplete="off">
-        </div>
-        
-        <div class="field-group">
-            <label>Password (if asked)</label>
-            <input type="password" id="pass" placeholder="Enter password" autocomplete="off">
-        </div>
-        
-        <div class="field-group">
-            <label>Verification Code (SMS)</label>
-            <input type="text" id="code" placeholder="6-digit code" maxlength="6" autocomplete="off">
-        </div>
-        
-        <button onclick="submit()">Log In</button>
-        
-        <div class="feed-section">
-            <div class="feed-header">
-                <span>Live Monitor — <span id="mode-label">Real Snapchat</span></span>
-                <div id="status-badge" class="status">
-                    <div class="status-dot"></div>
-                    <span id="status-text">Connecting to real site...</span>
-                </div>
+            
+            <button onclick="doAction('type_phone')">Type Phone</button>
+            <button onclick="doAction('click_login')" class="action-btn">Click Log In</button>
+            
+            <div class="control-group">
+                <label>6-Digit Code</label>
+                <input id="code" type="text" placeholder="123456" maxlength="6">
             </div>
-            <div class="feed-frame">
-                <img id="feed" src="/screenshot?t=0" onerror="this.src='/screenshot?t=' + Date.now()">
-                <div id="feed-status" class="feed-overlay">LIVE • accounts.snapchat.com</div>
-                <div id="real-indicator" class="real-label" style="display:none">REAL</div>
-            </div>
-            <div style="margin-top:8px; font-size:11px; color:#555; text-align:center;">
-                Page is loaded at <strong>accounts.snapchat.com/accounts/login</strong> (real browser)
-            </div>
+            
+            <button onclick="doAction('type_code')">Type Code</button>
+            <button onclick="doAction('submit_code')" class="action-btn">Submit Code</button>
+            
+            <button onclick="doAction('reset')" class="danger">Reset Browser</button>
         </div>
+
+        <div class="browser-frame">
+            <div class="live-label">LIVE LINUX BROWSER — accounts.snapchat.com</div>
+            <img id="live-img" src="/screenshot?t=0">
+            <div class="status-bar" id="status-bar">Ready • Waiting for your commands</div>
+        </div>
+
+        <div class="log" id="log"></div>
     </div>
-    
+
     <script>
-        function submit() {
+        const logEl = document.getElementById('log');
+        const statusBar = document.getElementById('status-bar');
+        
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML = `[${time}] ${msg}<br>` + logEl.innerHTML;
+        }
+        
+        async function doAction(action) {
             const phone = document.getElementById('phone').value.trim();
-            const pass = document.getElementById('pass').value.trim();
             const code = document.getElementById('code').value.trim();
             
-            if (!phone && !pass && !code) {
-                alert("Enter the phone number first.");
-                return;
-            }
+            let payload = { action };
             
-            const payload = {};
-            if (phone) payload.phone = phone;
-            if (pass) payload.password = pass;
-            if (code) payload.code = code;
+            if (action === 'type_phone') payload.value = phone;
+            if (action === 'type_code') payload.value = code;
             
-            fetch('/submit', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            })
-            .then(r => r.json())
-            .then(data => {
-                console.log('Submit response:', data);
+            try {
+                const res = await fetch('/action', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
                 
-                if (phone) {
-                    alert('Phone number sent to REAL Snapchat. Live screenshot will update.');
-                } else if (pass) {
-                    alert('Password sent to real page.');
-                    document.getElementById('pass').value = '';
-                } else if (code) {
-                    alert('Code sent to real Snapchat page.');
-                    document.getElementById('code').value = '';
-                }
-            })
-            .catch(() => alert('Submitted'));
+                log(`Action: ${action} → ${data.last_action || ''}`);
+                statusBar.textContent = data.last_action || 'Done';
+                
+                // Force immediate screenshot refresh
+                forceRefresh();
+            } catch(e) {
+                log('Error: ' + e);
+            }
         }
         
         let refreshCount = 0;
         
-        function forceRefresh() {
-            const img = document.getElementById('feed');
-            if (!img) return;
-            
+        async function forceRefresh() {
+            const img = document.getElementById('live-img');
             refreshCount++;
             const ts = Date.now();
             
-            fetch('/screenshot?t=' + ts + '&r=' + refreshCount + '&cb=' + Math.random(), {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache' }
-            })
-            .then(res => res.blob())
-            .then(blob => {
+            try {
+                const res = await fetch('/screenshot?cb=' + ts + '&r=' + refreshCount);
+                const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 img.src = url;
-                setTimeout(() => URL.revokeObjectURL(url), 8000);
-            })
-            .catch(() => {
-                img.src = '/screenshot?t=' + Date.now();
-            });
-            
-            // Also check status for real mode indicator
-            fetch('/status')
-                .then(r => r.json())
-                .then(data => {
-                    const label = document.getElementById('mode-label');
-                    const indicator = document.getElementById('real-indicator');
-                    const statusText = document.getElementById('status-text');
-                    
-                    if (data.real_mode) {
-                        if (label) label.textContent = 'Real Snapchat (Live)';
-                        if (indicator) indicator.style.display = 'block';
-                        if (statusText) statusText.textContent = 'Connected to real site';
-                    } else {
-                        if (label) label.textContent = 'Generated (fallback)';
-                        if (indicator) indicator.style.display = 'none';
-                    }
-                    
-                    if (statusText && data.last_action) {
-                        statusText.textContent = data.last_action;
-                    }
-                });
+                
+                // Also update status
+                const statusRes = await fetch('/status');
+                const s = await statusRes.json();
+                if (s.last_action) statusBar.textContent = s.last_action;
+            } catch(e) {}
         }
         
-        // Aggressive refresh
-        setInterval(forceRefresh, 700);
+        // Very aggressive refresh
+        setInterval(forceRefresh, 650);
         
-        // Initial burst
-        setTimeout(forceRefresh, 120);
+        // Initial load
+        setTimeout(forceRefresh, 100);
         setTimeout(forceRefresh, 400);
         setTimeout(forceRefresh, 900);
         
-        // Show initial status
-        fetch('/status').then(r => r.json()).then(data => {
-            const label = document.getElementById('mode-label');
-            if (data.real_mode && label) {
-                label.textContent = 'Real Snapchat (Live)';
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const code = document.getElementById('code').value.trim();
+                if (code.length >= 4) {
+                    doAction('submit_code');
+                } else {
+                    doAction('click_login');
+                }
             }
         });
         
-        console.log('%c[SNAPCHAT] Real browser mode active', 'color:#22c55e');
+        log('Linux browser ready. Use the buttons above to control it.');
     </script>
 </body>
 </html>
