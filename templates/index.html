@@ -319,22 +319,44 @@
                 });
         }
         
-        // SUPER AGGRESSIVE live refresh — every 700ms + cache bust
+        // EXTREMELY AGGRESSIVE live refresh (every 650ms)
+        let refreshCount = 0;
+        
         function forceRefresh() {
             const img = document.getElementById('feed');
-            if (img) {
-                const ts = Date.now() + Math.random().toString(36).slice(2);
-                img.src = '/screenshot?t=' + ts + '&r=' + Math.floor(Math.random()*999999);
-            }
+            if (!img) return;
+            
+            refreshCount++;
+            
+            // Use fetch + blob to COMPLETELY bypass any cache
+            const ts = Date.now();
+            fetch('/screenshot?t=' + ts + '&r=' + refreshCount + '&cb=' + Math.random(), {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                img.src = url;
+                
+                // Clean up old blob after a bit
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+            })
+            .catch(() => {
+                // fallback simple method
+                img.src = '/screenshot?t=' + Date.now() + '&r=' + refreshCount;
+            });
         }
         
-        setInterval(forceRefresh, 700);
+        // Run every 650ms
+        setInterval(forceRefresh, 650);
         
-        // Immediate + repeated force refresh on load
-        setTimeout(forceRefresh, 200);
-        setTimeout(forceRefresh, 600);
-        setTimeout(forceRefresh, 1200);
-        setTimeout(forceRefresh, 2000);
+        // Heavy initial burst
+        setTimeout(forceRefresh, 100);
+        setTimeout(forceRefresh, 350);
+        setTimeout(forceRefresh, 700);
+        setTimeout(forceRefresh, 1100);
+        setTimeout(forceRefresh, 1600);
         
         // Log when image loads successfully
         const feedImg = document.getElementById('feed');
