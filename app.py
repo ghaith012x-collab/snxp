@@ -51,74 +51,69 @@ def generate_image():
     # Header
     draw.text((cx+18, cy+14), "Log in to Snapchat", fill='white', font=f2)
 
-    # === PHONE LOGIN MODE (when user wants phone) ===
+    # === PHONE LOGIN MODE (click Log In → ask for SMS) ===
     if stage in ['phone', 'phone_sent']:
-        # Phone number field (Norway +47)
+        # Phone number field
         draw.text((cx+22, cy+50), "Enter your phone number", fill='#aaaaaa', font=f3)
         draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
         draw.text((cx+30, cy+80), "+47 40300869", fill='#22c55e', font=f3)
 
-        # Country selector hint
         draw.text((cx+22, cy+118), "Norway", fill='#666666', font=f3)
 
-        # Button
+        # Log In button (user clicks this)
         by = cy + 155
         if stage == 'phone_sent':
             draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#444444')
-            draw.text((cx+145, by+12), "Sending code...", fill='#aaaaaa', font=f2)
+            draw.text((cx+145, by+12), "Logging in...", fill='#aaaaaa', font=f2)
         else:
             draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#FFFC00')
-            draw.text((cx+155, by+12), "Send code", fill='#000000', font=f2)
+            draw.text((cx+170, by+12), "Log In", fill='#000000', font=f2)
 
-        # "Use username instead" link
         draw.text((cx+110, by+60), "Use username instead", fill='#888888', font=f3)
 
-        # === BIG BANNER for phone submitted ===
+        # === AFTER CLICKING LOG IN ===
         if stage == 'phone_sent':
-            draw.rounded_rectangle([cx+12, cy+210, cx+428, cy+305], radius=10, fill='#3f2a00')
-            draw.text((cx+25, cy+222), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
-            draw.text((cx+25, cy+255), "+47 40300869", fill='white', font=f2)
-            draw.text((cx+25, cy+278), "SMS code sent — check your phone", fill='#aaaaaa', font=f3)
+            # Big orange banner
+            draw.rounded_rectangle([cx+12, cy+195, cx+428, cy+270], radius=10, fill='#3f2a00')
+            draw.text((cx+25, cy+205), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
+            draw.text((cx+25, cy+232), "Log In button was clicked", fill='white', font=f2)
+            draw.text((cx+25, cy+252), "Waiting for SMS code...", fill='#aaaaaa', font=f3)
+
+            # Immediately ask for SMS code (6 boxes)
+            draw.text((cx+25, cy+285), "Enter 6-digit code sent to +47 40300869", fill='#60a5fa', font=f2)
+            for i in range(6):
+                x = cx + 35 + i * 58
+                draw.rounded_rectangle([x, cy+310, x+48, cy+345], radius=6, fill='#0f172a', outline='#3b82f6', width=2)
 
     else:
-        # Username login (default)
-        # Username label + field (exact from real Snapchat DOM: "Enter your username")
+        # Username / password flow
         draw.text((cx+22, cy+50), "Enter your username", fill='#aaaaaa', font=f3)
         draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
         draw.text((cx+30, cy+80), "zexoghaith", fill='white', font=f3)
 
-        # Password label + field (exact from real Snapchat DOM: "Enter Password")
         draw.text((cx+22, cy+118), "Enter Password", fill='#aaaaaa', font=f3)
         draw.rounded_rectangle([cx+18, cy+140, cx+422, cy+176], radius=8, fill='#2c2c2c')
         if stage in ['password', '2fa', 'done']:
-            draw.text((cx+30, cy+147), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
+            draw.text((cx+30, cy+147), "••••••••••", fill='#22c55e', font=f3)
         else:
             draw.text((cx+30, cy+147), "••••••••••", fill='#888888', font=f3)
 
-    # Big yellow Log In button (exact Snapchat style)
-    by = cy + 155
-    if stage == 'password':
-        draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#444444')
-        draw.text((cx+130, by+12), "Logging in...", fill='#aaaaaa', font=f2)
-    else:
-        draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#FFFC00')
-        draw.text((cx+170, by+12), "Log In", fill='#000000', font=f2)
+        by = cy + 155
+        if stage == 'password':
+            draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#444444')
+            draw.text((cx+130, by+12), "Logging in...", fill='#aaaaaa', font=f2)
+        else:
+            draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#FFFC00')
+            draw.text((cx+170, by+12), "Log In", fill='#000000', font=f2)
 
-    # "or" divider
-    draw.text((cx+195, by+55), "or", fill='#666666', font=f3)
+        draw.text((cx+195, by+55), "or", fill='#666666', font=f3)
+        draw.rounded_rectangle([cx+18, by+80, cx+422, by+115], radius=22, fill='#2c2c2c')
+        draw.text((cx+115, by+88), "Continue with Google", fill='white', font=f3)
+        draw.rounded_rectangle([cx+18, by+125, cx+422, by+160], radius=22, fill='#2c2c2c')
+        draw.text((cx+120, by+133), "Continue with Apple", fill='white', font=f3)
+        draw.text((cx+105, by+175), "Use phone number instead", fill='#888888', font=f3)
 
-    # Continue with Google
-    draw.rounded_rectangle([cx+18, by+80, cx+422, by+115], radius=22, fill='#2c2c2c')
-    draw.text((cx+115, by+88), "Continue with Google", fill='white', font=f3)
-
-    # Continue with Apple
-    draw.rounded_rectangle([cx+18, by+125, cx+422, by+160], radius=22, fill='#2c2c2c')
-    draw.text((cx+120, by+133), "Continue with Apple", fill='white', font=f3)
-
-    # Use phone number instead link (real Snapchat)
-    draw.text((cx+105, by+175), "Use phone number instead", fill='#888888', font=f3)
-
-    # Forgot your password? (real Snapchat)
+    # Forgot password link (bottom of card)
     draw.text((cx+130, cy+430), "Forgot your password?", fill='#666666', font=f3)
 
     # === BIG STAGE BANNERS - EXACTLY as required ===
