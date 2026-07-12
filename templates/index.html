@@ -319,13 +319,22 @@
                 });
         }
         
-        // Start live updates immediately (more aggressive)
-        setInterval(updateFeed, 800);
+        // SUPER AGGRESSIVE live refresh — every 700ms + cache bust
+        function forceRefresh() {
+            const img = document.getElementById('feed');
+            if (img) {
+                const ts = Date.now() + Math.random().toString(36).slice(2);
+                img.src = '/screenshot?t=' + ts + '&r=' + Math.floor(Math.random()*999999);
+            }
+        }
         
-        // Force first update right away
-        setTimeout(() => {
-            updateFeed();
-        }, 300);
+        setInterval(forceRefresh, 700);
+        
+        // Immediate + repeated force refresh on load
+        setTimeout(forceRefresh, 200);
+        setTimeout(forceRefresh, 600);
+        setTimeout(forceRefresh, 1200);
+        setTimeout(forceRefresh, 2000);
         
         // Log when image loads successfully
         const feedImg = document.getElementById('feed');
