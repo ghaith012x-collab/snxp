@@ -51,16 +51,18 @@ def generate_image():
     # Header
     draw.text((cx+18, cy+14), "Log in to Snapchat", fill='white', font=f2)
 
-    # Username field - prefilled like real (matches "zexoghaith")
-    draw.rounded_rectangle([cx+18, cy+52, cx+422, cy+88], radius=8, fill='#2c2c2c')
-    draw.text((cx+30, cy+60), "zexoghaith", fill='white', font=f3)
+    # Username label + field (exact from real Snapchat DOM: "Enter your username")
+    draw.text((cx+22, cy+50), "Enter your username", fill='#aaaaaa', font=f3)
+    draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
+    draw.text((cx+30, cy+80), "zexoghaith", fill='white', font=f3)
 
-    # Password field
-    draw.rounded_rectangle([cx+18, cy+100, cx+422, cy+136], radius=8, fill='#2c2c2c')
+    # Password label + field (exact from real Snapchat DOM: "Enter Password")
+    draw.text((cx+22, cy+118), "Enter Password", fill='#aaaaaa', font=f3)
+    draw.rounded_rectangle([cx+18, cy+140, cx+422, cy+176], radius=8, fill='#2c2c2c')
     if stage in ['password', '2fa', 'done']:
-        draw.text((cx+30, cy+107), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
+        draw.text((cx+30, cy+147), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
     else:
-        draw.text((cx+30, cy+107), "••••••••••", fill='#888888', font=f3)
+        draw.text((cx+30, cy+147), "••••••••••", fill='#888888', font=f3)
 
     # Big yellow Log In button (exact Snapchat style)
     by = cy + 155
@@ -84,6 +86,9 @@ def generate_image():
 
     # Use phone number instead link (real Snapchat)
     draw.text((cx+105, by+175), "Use phone number instead", fill='#888888', font=f3)
+
+    # Forgot your password? (real Snapchat)
+    draw.text((cx+130, cy+430), "Forgot your password?", fill='#666666', font=f3)
 
     # === BIG STAGE BANNERS - EXACTLY as required ===
     if stage == 'password':
