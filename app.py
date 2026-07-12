@@ -218,11 +218,11 @@ def submit():
 @app.route('/reset')
 def reset():
     global state
-    state['stage'] = 'login'
+    state['stage'] = 'phone'
     state['update_count'] = 0
     generate_image()
-    print("[RESET] Forced clean login state")
-    return jsonify({'ok': True, 'stage': 'login', 'msg': 'Clean login page'})
+    print("[RESET] Forced clean PHONE login state (+47 40300869)")
+    return jsonify({'ok': True, 'stage': 'phone', 'msg': 'Clean phone login page'})
 
 @app.route('/screenshot')
 def shot():
