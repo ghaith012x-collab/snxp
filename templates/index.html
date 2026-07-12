@@ -1,198 +1,163 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LIVE Linux Browser Control</title>
+    <title>Live Snapchat Login Cam</title>
     <style>
-        body { background: #0a0a0f; color: #ddd; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        h1 { margin-bottom: 10px; }
-        .controls { 
-            background: #1a1a2e; 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-bottom: 20px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-        }
-        .control-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 12px; color: #888; }
-        input { 
-            padding: 10px 14px; 
-            background: #111; 
-            border: 1px solid #333; 
-            color: white; 
-            border-radius: 8px; 
-            font-size: 15px;
-            width: 260px;
-        }
-        button { 
-            padding: 12px 20px; 
-            background: #3b82f6; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            cursor: pointer;
-            font-size: 15px;
-        }
-        button:hover { background: #2563eb; }
-        .action-btn { background: #22c55e; }
-        .danger { background: #ef4444; }
-        
-        .browser-frame {
-            background: #1e1e1e;
-            border: 12px solid #222;
-            border-radius: 12px;
+        body { background:#0a0a0f; color:#ddd; font-family:sans-serif; margin:0; padding:20px; text-align:center; }
+        .frame {
+            display: inline-block;
+            border: 14px solid #222;
+            border-radius: 14px;
+            background: #111;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.7);
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-            width: 1280px;
+        }
+        #live {
+            display: block;
+            cursor: crosshair;
             max-width: 100%;
+            image-rendering: crisp-edges;
         }
-        .live-label {
-            background: #ef4444;
-            color: white;
-            font-size: 13px;
-            padding: 4px 14px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .status-bar {
+        .bar {
             background: #111;
             padding: 8px 16px;
             font-family: monospace;
             font-size: 13px;
             color: #22c55e;
+            text-align: left;
         }
-        #live-img {
-            width: 100%;
-            display: block;
-            image-rendering: crisp-edges;
+        .controls {
+            margin: 20px auto;
+            background: #1a1a2e;
+            padding: 18px;
+            border-radius: 12px;
+            max-width: 820px;
+            display: inline-block;
         }
-        .log {
-            background: #111;
-            padding: 12px;
-            margin-top: 15px;
+        button {
+            padding: 10px 18px;
+            margin: 4px;
+            background: #3b82f6;
+            color: white;
+            border: none;
             border-radius: 8px;
-            font-family: monospace;
-            font-size: 13px;
-            max-height: 180px;
-            overflow: auto;
+            font-size: 14px;
+            cursor: pointer;
         }
+        button:hover { background: #2563eb; }
+        .danger { background: #ef4444; }
+        input {
+            padding: 8px 12px;
+            font-size: 15px;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 6px;
+            width: 220px;
+        }
+        .hint { color:#666; font-size:12px; margin-top:8px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🖥️ LIVE Linux Browser Control</h1>
-        <p style="color:#888; margin-bottom:20px;">You control the browser. Every click and keystroke updates the live screenshot.</p>
+    <h2>🖥️ Live Snapchat Login - Full Control</h2>
+    <p style="color:#666">Click anywhere on the image • Type in the box below • Press Enter or Backspace</p>
 
-        <div class="controls">
-            <div class="control-group">
-                <label>Phone Number</label>
-                <input id="phone" type="text" value="+47 40300869">
-            </div>
-            
-            <button onclick="doAction('type_phone')">Type Phone</button>
-            <button onclick="doAction('click_login')" class="action-btn">Click Log In</button>
-            
-            <div class="control-group">
-                <label>6-Digit Code</label>
-                <input id="code" type="text" placeholder="123456" maxlength="6">
-            </div>
-            
-            <button onclick="doAction('type_code')">Type Code</button>
-            <button onclick="doAction('submit_code')" class="action-btn">Submit Code</button>
-            
-            <button onclick="doAction('reset')" class="danger">Reset Browser</button>
-        </div>
-
-        <div class="browser-frame">
-            <div class="live-label">LIVE LINUX BROWSER — accounts.snapchat.com</div>
-            <img id="live-img" src="/screenshot?t=0">
-            <div class="status-bar" id="status-bar">Ready • Waiting for your commands</div>
-        </div>
-
-        <div class="log" id="log"></div>
+    <div class="frame">
+        <div class="bar" id="bar">LIVE CAM • Click fields to focus • Type below</div>
+        <img id="live" src="/screenshot" width="1280" height="720">
     </div>
 
+    <div class="controls">
+        <input id="input" placeholder="Click a field above, then type here" autofocus>
+        <button onclick="sendType()">Type</button>
+        <button onclick="sendKey('Enter')">Enter</button>
+        <button onclick="sendKey('Backspace')">Backspace</button>
+        <button onclick="resetAll()" class="danger">Reset Page</button>
+    </div>
+
+    <div class="hint">Tip: Click the username or password box in the image first, then type.</div>
+
     <script>
-        const logEl = document.getElementById('log');
-        const statusBar = document.getElementById('status-bar');
-        
-        function log(msg) {
-            const time = new Date().toLocaleTimeString();
-            logEl.innerHTML = `[${time}] ${msg}<br>` + logEl.innerHTML;
-        }
-        
-        async function doAction(action) {
-            const phone = document.getElementById('phone').value.trim();
-            const code = document.getElementById('code').value.trim();
-            
-            let payload = { action };
-            
-            if (action === 'type_phone') payload.value = phone;
-            if (action === 'type_code') payload.value = code;
-            
-            try {
-                const res = await fetch('/action', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                log(`Action: ${action} → ${data.last_action || ''}`);
-                statusBar.textContent = data.last_action || 'Done';
-                
-                // Force immediate screenshot refresh
-                forceRefresh();
-            } catch(e) {
-                log('Error: ' + e);
-            }
-        }
-        
-        let refreshCount = 0;
-        
-        async function forceRefresh() {
-            const img = document.getElementById('live-img');
-            refreshCount++;
+        const live = document.getElementById('live');
+        const input = document.getElementById('input');
+        const bar = document.getElementById('bar');
+
+        let lastRefresh = 0;
+
+        function refresh() {
             const ts = Date.now();
-            
-            try {
-                const res = await fetch('/screenshot?cb=' + ts + '&r=' + refreshCount);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                img.src = url;
-                
-                // Also update status
-                const statusRes = await fetch('/status');
-                const s = await statusRes.json();
-                if (s.last_action) statusBar.textContent = s.last_action;
-            } catch(e) {}
+            live.src = `/screenshot?cb=${ts}`;
+            fetch('/status').then(r => r.json()).then(s => {
+                bar.textContent = `LIVE CAM • ${s.last_action || ''} • frame ${s.frame}`;
+            });
         }
-        
-        // Very aggressive refresh
-        setInterval(forceRefresh, 650);
-        
-        // Initial load
-        setTimeout(forceRefresh, 100);
-        setTimeout(forceRefresh, 400);
-        setTimeout(forceRefresh, 900);
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', e => {
+
+        // Click anywhere on the image
+        live.onclick = async function(e) {
+            const rect = live.getBoundingClientRect();
+            const scaleX = live.naturalWidth / rect.width;
+            const scaleY = live.naturalHeight / rect.height;
+
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            await fetch('/click', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({x, y})
+            });
+
+            input.focus();
+            refresh();
+        };
+
+        async function sendType() {
+            const text = input.value;
+            if (!text) return;
+            
+            await fetch('/type', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text})
+            });
+            input.value = '';
+            refresh();
+        }
+
+        async function sendKey(key) {
+            await fetch('/key', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({key})
+            });
+            refresh();
+        }
+
+        async function resetAll() {
+            await fetch('/reset', {method: 'POST'});
+            refresh();
+        }
+
+        // Keyboard support
+        input.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
-                const code = document.getElementById('code').value.trim();
-                if (code.length >= 4) {
-                    doAction('submit_code');
-                } else {
-                    doAction('click_login');
-                }
+                sendType();
+                setTimeout(() => sendKey('Enter'), 120);
+            }
+            if (e.key === 'Backspace' && input.value === '') {
+                e.preventDefault();
+                sendKey('Backspace');
             }
         });
-        
-        log('Linux browser ready. Use the buttons above to control it.');
+
+        // Aggressive live refresh
+        setInterval(refresh, 620);
+
+        // Initial
+        setTimeout(refresh, 80);
+        setTimeout(refresh, 350);
+
+        console.log('%c[SNAPCHAT CAM] Full control ready — click + type', 'color:#22c55e');
     </script>
 </body>
 </html>

