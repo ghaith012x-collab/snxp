@@ -186,6 +186,11 @@ def reset():
 
 @app.route('/screenshot')
 def shot():
+    # Support ?reset=1 to force clean login (for testing)
+    if request.args.get('reset') == '1':
+        state['stage'] = 'login'
+        state['update_count'] = 0
+        print("[RESET] Forced clean login via screenshot?reset=1")
     # Always fresh
     generate_image()
     resp = send_from_directory(STATIC_DIR, 'screenshot.png')
