@@ -163,16 +163,16 @@ def generate_image():
 
 def screenshot_loop():
     global state
-    print("[LOOP] Starting clean Snapchat simulation")
+    print("[LOOP] Starting clean Snapchat simulation (PHONE MODE)")
     
-    # Force clean start
-    state['stage'] = 'login'
+    # Force clean start — phone number login as requested
+    state['stage'] = 'phone'
     state['update_count'] = 0
     
     generate_image()
     state['started'] = True
     
-    print("[LOOP] Clean login page active")
+    print("[LOOP] Clean PHONE login page active (+47 40300869)")
     
     while True:
         generate_image()
