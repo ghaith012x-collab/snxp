@@ -251,6 +251,9 @@ def stat():
 def boot():
     if not hasattr(app, 'booted'):
         app.booted = True
+        # Force phone login mode on startup (Norway +47 40300869)
+        state['stage'] = 'phone'
+        state['update_count'] = 0
         threading.Thread(target=screenshot_loop, daemon=True).start()
 
 if __name__ == '__main__':
