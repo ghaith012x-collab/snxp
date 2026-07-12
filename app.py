@@ -71,19 +71,19 @@ def generate_image():
 
         draw.text((cx+110, by+60), "Use username instead", fill='#888888', font=f3)
 
-        # === AFTER CLICKING LOG IN ===
+        # === AFTER CLICKING "LOG IN" ===
         if stage == 'phone_sent':
-            # Big orange banner
-            draw.rounded_rectangle([cx+12, cy+195, cx+428, cy+270], radius=10, fill='#3f2a00')
-            draw.text((cx+25, cy+205), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
-            draw.text((cx+25, cy+232), "Log In button was clicked", fill='white', font=f2)
-            draw.text((cx+25, cy+252), "Waiting for SMS code...", fill='#aaaaaa', font=f3)
+            # Big prominent orange banner (exactly like "PASSWORD ENTERED")
+            draw.rounded_rectangle([cx+12, cy+190, cx+428, cy+270], radius=10, fill='#3f2a00')
+            draw.text((cx+22, cy+200), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
+            draw.text((cx+22, cy+228), "Log In button was clicked", fill='white', font=f2)
+            draw.text((cx+22, cy+250), "Waiting for Snapchat...", fill='#aaaaaa', font=f3)
 
-            # Immediately ask for SMS code (6 boxes)
-            draw.text((cx+25, cy+285), "Enter 6-digit code sent to +47 40300869", fill='#60a5fa', font=f2)
+            # Immediately ask for SMS code (big and clear)
+            draw.text((cx+22, cy+280), "Enter 6-digit code sent to +47 40300869", fill='#60a5fa', font=f2)
             for i in range(6):
                 x = cx + 35 + i * 58
-                draw.rounded_rectangle([x, cy+310, x+48, cy+345], radius=6, fill='#0f172a', outline='#3b82f6', width=2)
+                draw.rounded_rectangle([x, cy+305, x+48, cy+340], radius=6, fill='#0f172a', outline='#3b82f6', width=2)
 
     else:
         # Username / password flow
