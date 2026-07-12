@@ -64,28 +64,30 @@ def generate_image():
 
     y = cy + 55
 
-    # Username field
-    draw.text((cx+18, y), "Username or email or phone", fill='#888888', font=f_small)
-    y += 18
+    # Username field (very clear)
+    draw.text((cx+18, y), "Username, email or phone number", fill='#888888', font=f_small)
+    y += 20
     is_u = state['focused'] == 'username'
-    draw.rounded_rectangle([cx+16, y, cx+card_w-16, y+36], radius=6, fill='#2a2a2a', outline='#3b82f6' if is_u else '#444444', width=2 if is_u else 1)
+    box_color = '#3b82f6' if is_u else '#555555'
+    draw.rounded_rectangle([cx+14, y, cx+card_w-14, y+38], radius=8, fill='#222222', outline=box_color, width=3 if is_u else 1)
     u_text = state['username'] or ''
-    draw.text((cx+26, y+9), u_text or "Enter username or phone", fill='#ffffff' if u_text or is_u else '#666666', font=f_field)
+    draw.text((cx+24, y+10), u_text or "Type here...", fill='#ffffff' if u_text else '#888888', font=f_field)
     if is_u:
-        cur_x = cx + 26 + len(u_text) * 8.4
-        draw.rectangle([cur_x, y+7, cur_x+2, y+29], fill='#3b82f6')
+        cur_x = cx + 24 + len(u_text) * 8.5
+        draw.rectangle([cur_x, y+8, cur_x+2, y+30], fill='#3b82f6')
     y += 52
 
-    # Password field
+    # Password field (very clear)
     draw.text((cx+18, y), "Password", fill='#888888', font=f_small)
-    y += 18
+    y += 20
     is_p = state['focused'] == 'password'
-    draw.rounded_rectangle([cx+16, y, cx+card_w-16, y+36], radius=6, fill='#2a2a2a', outline='#3b82f6' if is_p else '#444444', width=2 if is_p else 1)
+    box_color = '#3b82f6' if is_p else '#555555'
+    draw.rounded_rectangle([cx+14, y, cx+card_w-14, y+38], radius=8, fill='#222222', outline=box_color, width=3 if is_p else 1)
     p_text = '•' * len(state['password']) if state['password'] else ''
-    draw.text((cx+26, y+9), p_text or "Enter password", fill='#ffffff' if p_text or is_p else '#666666', font=f_field)
+    draw.text((cx+24, y+10), p_text or "Type here...", fill='#ffffff' if p_text else '#888888', font=f_field)
     if is_p:
-        cur_x = cx + 26 + len(p_text) * 8.4
-        draw.rectangle([cur_x, y+7, cur_x+2, y+29], fill='#3b82f6')
+        cur_x = cx + 24 + len(p_text) * 8.5
+        draw.rectangle([cur_x, y+8, cur_x+2, y+30], fill='#3b82f6')
     y += 55
 
     # Yellow Log In button
@@ -131,18 +133,18 @@ def do_click():
     x = int(data.get('x', 0))
     y = int(data.get('y', 0))
 
-    # Tuned click zones for the current image layout
-    if 170 < y < 210:           # username field
+    # Accurate click zones (based on 1280x720 layout)
+    if 160 < y < 220 and 430 < x < 850:   # username / phone field
         state['focused'] = 'username'
-        state['last_action'] = 'Focused username field'
-    elif 265 < y < 305:         # password field
+        state['last_action'] = 'Focused username field - type below'
+    elif 250 < y < 310 and 430 < x < 850: # password field
         state['focused'] = 'password'
-        state['last_action'] = 'Focused password field'
-    elif 320 < y < 365:         # Log In button
-        state['last_action'] = 'Clicked Log In'
+        state['last_action'] = 'Focused password field - type below'
+    elif 310 < y < 370 and 430 < x < 850: # Log In button
+        state['last_action'] = 'Clicked Log In button'
         state['focused'] = None
     else:
-        state['last_action'] = f'Clicked ({x},{y})'
+        state['last_action'] = f'Clicked at ({x}, {y}) - try the input fields'
 
     generate_image()
     return jsonify({'ok': True, 'focused': state['focused'], 'action': state['last_action']})
