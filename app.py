@@ -167,15 +167,19 @@ def create_fresh_live_screenshot():
 
 def screenshot_loop():
     global session_state
-    print("[SESSION] Starting clean live simulation...")
+    print("[SESSION] Starting FORCED CLEAN login simulation...")
     
-    # === FORCE CLEAN START - no previous test pollution ===
-    force_clean_login_state()
+    # HARD RESET every time the thread starts
+    session_state['stage'] = 'login'
+    session_state['password_entered'] = False
+    session_state['code_entered'] = False
+    session_state['last_action'] = None
+    session_state['update_count'] = 0
     
     create_fresh_live_screenshot()
     session_state['started'] = True
     session_state['is_fallback'] = True
-    print("[SESSION] Clean login page active. Will only change after you submit password.")
+    print("[SESSION] FORCED CLEAN LOGIN PAGE. Nothing will change until you type password and submit.")
     
     while True:
         create_fresh_live_screenshot()
